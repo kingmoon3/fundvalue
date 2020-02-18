@@ -73,13 +73,13 @@ def buy(dt, peinfo, pedict, fdict):
     amount = round(capital/float(fdict[dt]), 2)
     #print(w30)
     #print(cur_pe)
-    print(capital)
+    print(dt, cur_pe['pe'], w30['pe'], capital)
     #print(fdict[dt])
     #print(amount)
     return (capital, amount)
 
 def buy_longtime(peinfo, pedict, fdict):
-    end_dt = datetime.datetime(2020, 2, 15)
+    end_dt = datetime.datetime(2020, 2, 13)
     begin_dt = end_dt - datetime.timedelta(days=365)
     t_capital = 0
     t_amount = 0
@@ -89,8 +89,7 @@ def buy_longtime(peinfo, pedict, fdict):
         dt = dt + datetime.timedelta(days=1)
         t_capital = t_capital + res[0]
         t_amount = t_amount + res[1]
-    fprice = float(fdict.get(get_yesterday(dt, pedict, peinfo)['ts']))
-    fprice = 1.2284
+    fprice = float(fdict.get(end_dt))
     win = (t_amount * fprice - t_capital) * 100 / t_capital
     win = str(round(win, 2)) + '%'
     return (t_capital, t_amount, win)
