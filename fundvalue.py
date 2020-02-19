@@ -89,34 +89,26 @@ class FundValue():
             return 0
         return w30/cur_pe
 
-    def buy_1day(self, dt, fid, base=100):
+    def buy_1day(self, fid, dt=None, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
+            dt is None，表示今天购买，否则校验是否为交易日。
         """
-        if dt not in self.trade_days:
+        if dt is None:
+            dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+        elif dt not in self.trade_days:
             return (0, 0)
         w30 = self.get_nwater(30, dt)
         cur_pe = self.peinfo.get(self.get_yesterday(dt))
         weight = self.get_weight(cur_pe, w30)
+        cur_price = self.f_info[fid].get(self.get_yesterday(dt))
         # 加强 pe 的权重，越低越买
         weight = weight ** 4
-        cur_price = self.f_info[fid].get(self.get_yesterday(dt))
         # 默认 price 合理价格为1，越低越买
         cur_price = cur_price ** 2
         capital = round(base*weight/cur_price, 2)
-        amount = round(capital/self.f_info[fid][dt], 2)
+        amount = round(capital/self.f_info[fid].get(dt, 0), 2)
         print(dt, weight, capital)
         return (capital, amount)
-
-    def buy_today(self, fid, base=100):
-        """ 评估今天应该买多少
-        """
-        dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-        w30 = self.get_nwater(30, dt)
-        cur_pe = self.peinfo.get(self.get_yesterday(dt))
-        weight = self.get_weight(cur_pe, w30)
-        cur_price = self.f_info[fid].get(self.get_yesterday(dt))
-        capital = round(base*weight/cur_price, 2)
-        return capital
 
     def buy_longtime(self, fid, begin_date, end_date, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。
@@ -126,7 +118,7 @@ class FundValue():
         days = (end_date - begin_date).days
         dt = begin_date
         for i in range(days):
-            res = self.buy_1day(dt, fid, base)
+            res = self.buy_1day(fid, dt, base)
             dt = dt + datetime.timedelta(days=1)
             t_capital = t_capital + res[0]
             t_amount = t_amount + res[1]
@@ -144,4 +136,3 @@ if __name__ == '__main__':
     bd = datetime.datetime(2016, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
     print(fv.buy_longtime(fid, bd, ed))
-    #print(fv.buy_today(fid))
