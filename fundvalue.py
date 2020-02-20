@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import operator
 import requests
 import datetime
@@ -18,10 +20,9 @@ class FundValue():
         self.f_info = {}
         self.trade_days = {}
 
-    def init_s50_peinfo(self, time='all'):
-        """ 获取上证50的pe，time可以为1y, 3y """
+    def init_peinfo(self, url):
+        """ 获取pe的通用接口 """
         pedict = {}
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000016?day=' + time
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
         res = requests.get(url=url, headers=header)
@@ -35,6 +36,16 @@ class FundValue():
         else:
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
+
+    def init_s50_peinfo(self, time='all'):
+        """ 获取上证50的pe，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000016?day=' + time
+        return self.init_peinfo(url)
+
+    def init_hs300_peinfo(self, time='all'):
+        """ 获取沪深300的pe，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000300?day=' + time
+        return self.init_peinfo(url)
 
     def init_f_info(self, fid):
         """ 获取指定基金的价格 """
@@ -84,7 +95,6 @@ class FundValue():
     def get_nprice(self, fid, end_date, n=50, day=365):
         """ 获取 price 均值。
         """
-        if cur_pe > w30:
         total = 0
         price_list = [ self.f_info[fid].get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
             if end_date-datetime.timedelta(days=i) in self.trade_days ]
@@ -93,16 +103,16 @@ class FundValue():
         avg = total/len(price_list)
         return avg*n/50
 
-    def get_weight_pe(self, cur_pe, w30):
+    def get_weight_pe(self, cur_pe, w30, n=2):
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
             经回测上证50，此参数对购买影响不大。
         """
         if cur_pe > w30:
             return 0
         # 加强 pe 的权重，越低越买
-        return (w30/cur_pe) ** 1
+        return (w30/cur_pe) ** n
 
-    def get_weight_price(self, cur_price, wprice=1):
+    def get_weight_price(self, cur_price, wprice=1, n=4):
         """ 获取 price 权重，默认以1做基准，实际采用前365天的平均价格。
             超过该价格，则不买，否则多买。在有分红等情况下需考虑复权。
             经回测上证50，此参数影响较大。
@@ -110,29 +120,30 @@ class FundValue():
         if cur_price > wprice:
             return 0
         # 加强 price 的权重，越低越买
-        return (wprice/cur_price) ** 6
+        return (wprice/cur_price) ** n
 
-    def buy_1day(self, fid, dt=None, base=100):
+    def buy_1day(self, fid, bdt=None, n_pe=2, n_price=4, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
+        dt = bdt
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
         elif dt not in self.trade_days:
             return (0, 0)
         w30 = self.get_nwater(dt, 30)
         cur_pe = self.peinfo.get(self.get_yesterday(dt))
-        weight_pe = self.get_weight_pe(cur_pe, w30)
+        weight_pe = self.get_weight_pe(cur_pe, w30, n_pe)
         wprice = self.get_nprice(fid, dt, 50)
         cur_price = self.f_info[fid].get(self.get_yesterday(dt))
-        weight_price = self.get_weight_price(cur_price, wprice)
+        weight_price = self.get_weight_price(cur_price, wprice, n_price)
         weight = weight_pe * weight_price
         capital = round(base * weight, 2)
-        amount = round(capital / self.f_info[fid].get(dt,0), 2)
+        amount = 0 if bdt is None else round(capital / self.f_info[fid].get(dt,-1), 2)
         #print(dt, weight, capital)
         return (capital, amount)
 
-    def buy_longtime(self, fid, begin_date, end_date, base=100):
+    def buy_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。
         """
         t_capital = 0.01
@@ -140,7 +151,7 @@ class FundValue():
         days = (end_date - begin_date).days
         dt = begin_date
         for i in range(days):
-            res = self.buy_1day(fid, dt, base)
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
             dt = dt + datetime.timedelta(days=1)
             t_capital = t_capital + res[0]
             t_amount = t_amount + res[1]
@@ -151,23 +162,19 @@ class FundValue():
 
 
 if __name__ == '__main__':
-    fid = '001548'
     fv = FundValue()
-    fv.init_s50_peinfo()
+    #fv.init_s50_peinfo()
+    #fid = '001548'
+    fv.init_hs300_peinfo()
+    fid = '100038'
     fv.init_f_info(fid)
 
-    bd = datetime.datetime(2016, 1, 1)
-    ed = datetime.datetime(2017, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed))
-    bd = datetime.datetime(2017, 1, 1)
-    ed = datetime.datetime(2018, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed))
-    bd = datetime.datetime(2018, 1, 1)
-    ed = datetime.datetime(2019, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed))
-    bd = datetime.datetime(2019, 1, 1)
-    ed = datetime.datetime(2020, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed))
+    for i in range(2016, 2020):
+        j = i+1
+        print(i)
+        bd = datetime.datetime(i, 1, 1)
+        ed = datetime.datetime(j, 1, 1)
+        print(fv.buy_longtime(fid, bd, ed, 2, 4))
     bd = datetime.datetime(2016, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed))
+    print(fv.buy_longtime(fid, bd, ed, 2, 4))
