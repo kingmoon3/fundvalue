@@ -163,10 +163,10 @@ class FundValue():
 
 if __name__ == '__main__':
     fv = FundValue()
-    #fv.init_s50_peinfo()
-    #fid = '001548'
-    fv.init_hs300_peinfo()
-    fid = '100038'
+    fv.init_s50_peinfo()
+    fid = '001548'
+    #fv.init_hs300_peinfo()
+    #fid = '100038'
     fv.init_f_info(fid)
 
     for i in range(2016, 2020):
