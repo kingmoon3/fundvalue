@@ -163,18 +163,18 @@ class FundValue():
 
 if __name__ == '__main__':
     fv = FundValue()
-    fv.init_s50_peinfo()
-    fid = '001548'
-    #fv.init_hs300_peinfo()
-    #fid = '100038'
+    #fv.init_s50_peinfo()
+    #fid = '001548'
+    fv.init_hs300_peinfo()
+    fid = '100038'
     fv.init_f_info(fid)
 
-    for i in range(2016, 2020):
+    for i in range(2011, 2020):
         j = i+1
         print(i)
         bd = datetime.datetime(i, 1, 1)
         ed = datetime.datetime(j, 1, 1)
         print(fv.buy_longtime(fid, bd, ed, 2, 4))
-    bd = datetime.datetime(2016, 1, 1)
+    bd = datetime.datetime(2011, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
     print(fv.buy_longtime(fid, bd, ed, 2, 4))
