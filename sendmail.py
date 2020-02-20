@@ -7,6 +7,8 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import smtplib
 
+from mailconfig import *
+
 def sendmail(receiver, subject, html, att=None, att_name=None):
     if att is None:
         msg = MIMEMultipart('alternative')
