@@ -126,6 +126,8 @@ class FundValue():
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
+        if len(self.trade_days) < 700:
+            return (-1, -1)
         dt = bdt
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
@@ -139,26 +141,54 @@ class FundValue():
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
         weight = weight_pe * weight_price
         capital = round(base * weight, 2)
+        #capital = base
         amount = 0 if bdt is None else round(capital / self.f_info[fid].get(dt,-1), 2)
         #print(dt, weight, capital)
         return (capital, amount)
 
     def buy_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
-        """ 长期购买一段时间，用于测试。默认买100块钱。
+        """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天价格为基准计算盈利。
         """
-        t_capital = 0.01
-        t_amount = 0
         days = (end_date - begin_date).days
+        b_capital = 0.01
+        b_amount = 0
         dt = begin_date
         for i in range(days):
             res = self.buy_1day(fid, dt, n_pe, n_price, base)
             dt = dt + datetime.timedelta(days=1)
-            t_capital = t_capital + res[0]
-            t_amount = t_amount + res[1]
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
         fprice = float(self.f_info[fid].get(self.get_today(end_date)))
-        win = (t_amount * fprice - t_capital) * 100 / t_capital
+        win = (b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(t_capital,2), round(t_amount,2), win)
+        return (round(b_capital,2), round(b_amount,2), win)
+
+    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
+        """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
+            回测结果显示如果不缺钱，做波段不如长期买着不放。不考虑申赎费，长期看回报率年化8%。
+            另外，无脑定投毫无意义。
+        """
+        days = (end_date - begin_date).days
+        sum_capital = 0
+        earn_capital = 0
+        b_capital = 0.01
+        b_amount = 0
+        dt = begin_date
+        for i in range(days):
+            if b_amount > 0 and self.peinfo.get(self.get_yesterday(dt)) > self.get_nwater(dt, 70):
+                earn_capital = earn_capital + self.f_info[fid].get(self.get_yesterday(dt)) * b_amount
+                print(dt, self.f_info[fid].get(self.get_yesterday(dt)), earn_capital)
+                b_amount = 0
+                b_capital = 0.01
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
+            dt = dt + datetime.timedelta(days=1)
+            sum_capital = sum_capital + res[0]
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
+        fprice = float(self.f_info[fid].get(self.get_today(end_date)))
+        win = (b_amount * fprice + earn_capital - sum_capital) * 100 / sum_capital
+        win = str(round(win, 2)) + '%'
+        return (round(sum_capital,2), round(earn_capital, 2), round(b_amount*fprice, 2), win)
 
 
 if __name__ == '__main__':
