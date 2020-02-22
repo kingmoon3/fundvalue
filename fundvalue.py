@@ -165,8 +165,10 @@ class FundValue():
 
     def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
-            回测结果显示如果不缺钱，做波段不如长期买着不放。不考虑申赎费，长期看回报率年化8%。
-            另外，无脑定投毫无意义。
+            为增加盈利，会将当前已赎回的钱再去申购基金，由于很难确定申购额度，导致最终盈利很难超过长期持有。
+            回测结果显示如不缺钱，做波段不如长期买着不再赎回。
+            不考虑申赎费，长期看回报率年化8%。
+            另外，每天无脑定投固定金额毫无意义。
         """
         days = (end_date - begin_date).days
         sum_capital = 0
@@ -185,26 +187,34 @@ class FundValue():
             sum_capital = sum_capital + res[0]
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
+            # 将已赎回的钱再去申购，每次申购额是当前申购额的3倍（此数字只适用于100038）。
+            if earn_capital > res[0]*3 :
+                b_capital = b_capital + res[0]*3
+                b_amount = b_amount + res[1]*3
+                earn_capital = earn_capital - res[0]*3
         fprice = float(self.f_info[fid].get(self.get_today(end_date)))
         win = (b_amount * fprice + earn_capital - sum_capital) * 100 / sum_capital
         win = str(round(win, 2)) + '%'
-        return (round(sum_capital,2), round(earn_capital, 2), round(b_amount*fprice, 2), win)
+        return (round(sum_capital,2), round(b_amount,2), round(earn_capital, 2), round(b_amount*fprice, 2), win)
 
 
 if __name__ == '__main__':
     fv = FundValue()
-    fv.init_s50_peinfo()
-    fid = '001548'
-    #fv.init_hs300_peinfo()
-    #fid = '100038'
+    #fv.init_s50_peinfo()
+    #fid = '001548'
+    #t = 2016
+    fv.init_hs300_peinfo()
+    fid = '100038'
+    t = 2011
     fv.init_f_info(fid)
 
-    for i in range(2016, 2020):
+    for i in range(t, 2020):
         j = i+1
         print(i)
         bd = datetime.datetime(i, 1, 1)
         ed = datetime.datetime(j, 1, 1)
         print(fv.buy_longtime(fid, bd, ed, 2, 4))
-    bd = datetime.datetime(2016, 1, 1)
+    bd = datetime.datetime(t, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
+    print(fv.bs_longtime(fid, bd, ed, 2, 4))
     print(fv.buy_longtime(fid, bd, ed, 2, 4))
