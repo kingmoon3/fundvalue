@@ -12,6 +12,8 @@ class FundValue():
         peinfo: 字典，保存指数的历史pe，{datetime: pe}
         f_info: 字典, 保存基金的历史价格，{fid: {datetime: nav}}，fid 为基金编码。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
+        fids: 不同指数基金对应的基金列表，目前只有一个。
+        index: 不同指数基金对应的名字，如上证50等。
     """
 
     def __init__(self):
@@ -19,6 +21,8 @@ class FundValue():
         self.peinfo = {}
         self.f_info = {}
         self.trade_days = {}
+        self.fids = []
+        self.index = ''
 
     def init_peinfo(self, url):
         """ 获取pe的通用接口 """
@@ -40,21 +44,29 @@ class FundValue():
     def init_s50_peinfo(self, time='all'):
         """ 获取上证50的pe，time可以为1y, 3y """
         url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000016?day=' + time
+        self.fids = ['001548', ]
+        self.index = u'上证50'
         return self.init_peinfo(url)
 
     def init_hs300_peinfo(self, time='all'):
         """ 获取沪深300的pe，time可以为1y, 3y """
         url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000300?day=' + time
+        self.fids = ['100038', ]
+        self.index = u'沪深300'
         return self.init_peinfo(url)
 
     def init_hsbonus_peinfo(self, time='all'):
         """ 获取中证红利的pe，time可以为1y, 3y """
         url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000922?day=' + time
+        self.fids = ['100032', ]
+        self.index = u'中证红利'
         return self.init_peinfo(url)
 
     def init_sbonus_peinfo(self, time='all'):
         """ 获取上证红利的pe，time可以为1y, 3y """
         url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000015?day=' + time
+        self.fids = ['510880', ]
+        self.index = u'上证红利'
         return self.init_peinfo(url)
 
     def init_f_info(self, fid):
@@ -212,17 +224,15 @@ if __name__ == '__main__':
     fv = FundValue()
 
     #fv.init_s50_peinfo()
-    #fid = '001548'
     #t = 2016
 
     #fv.init_hs300_peinfo()
-    #fid = '100038'
     #t = 2011
 
     fv.init_hsbonus_peinfo()
-    fid = '100032'
     t = 2011
 
+    fid = fv.fids[0]
     fv.init_f_info(fid)
 
     for i in range(t, 2020):
