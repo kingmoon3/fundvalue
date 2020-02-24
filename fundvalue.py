@@ -47,6 +47,16 @@ class FundValue():
         url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000300?day=' + time
         return self.init_peinfo(url)
 
+    def init_hsbonus_peinfo(self, time='all'):
+        """ 获取中证红利的pe，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000922?day=' + time
+        return self.init_peinfo(url)
+
+    def init_sbonus_peinfo(self, time='all'):
+        """ 获取上证红利的pe，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000015?day=' + time
+        return self.init_peinfo(url)
+
     def init_f_info(self, fid):
         """ 获取指定基金的价格 """
         fdict = {}
@@ -200,12 +210,19 @@ class FundValue():
 
 if __name__ == '__main__':
     fv = FundValue()
+
     #fv.init_s50_peinfo()
     #fid = '001548'
     #t = 2016
-    fv.init_hs300_peinfo()
-    fid = '100038'
+
+    #fv.init_hs300_peinfo()
+    #fid = '100038'
+    #t = 2011
+
+    fv.init_hsbonus_peinfo()
+    fid = '100032'
     t = 2011
+
     fv.init_f_info(fid)
 
     for i in range(t, 2020):
@@ -216,5 +233,5 @@ if __name__ == '__main__':
         print(fv.buy_longtime(fid, bd, ed, 2, 4))
     bd = datetime.datetime(t, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
-    print(fv.bs_longtime(fid, bd, ed, 2, 4))
+    #print(fv.bs_longtime(fid, bd, ed, 2, 4))
     print(fv.buy_longtime(fid, bd, ed, 2, 4))
