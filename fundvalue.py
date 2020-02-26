@@ -69,6 +69,13 @@ class FundValue():
         self.index = u'上证红利'
         return self.init_peinfo(url)
 
+    def init_gem_peinfo(self, time='all'):
+        """ 获取创业板的pe，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SZ399006?day=' + time
+        self.fids = ['003765', ]
+        self.index = u'创业板'
+        return self.init_peinfo(url)
+
     def init_f_info(self, fid):
         """ 获取指定基金的价格 """
         fdict = {}
