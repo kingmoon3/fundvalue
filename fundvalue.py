@@ -155,7 +155,7 @@ class FundValue():
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
-        if len(self.trade_days) < 700:
+        if len(self.trade_days) < 650:
             return (-1, -1)
         dt = bdt
         if dt is None:
@@ -236,8 +236,11 @@ if __name__ == '__main__':
     #fv.init_hs300_peinfo()
     #t = 2011
 
-    fv.init_hsbonus_peinfo()
-    t = 2011
+    #fv.init_hsbonus_peinfo()
+    #t = 2011
+
+    fv.init_gem_peinfo()
+    t = 2018
 
     fid = fv.fids[0]
     fv.init_f_info(fid)
@@ -252,3 +255,4 @@ if __name__ == '__main__':
     ed = datetime.datetime(2020, 1, 1)
     #print(fv.bs_longtime(fid, bd, ed, 2, 4))
     print(fv.buy_longtime(fid, bd, ed, 2, 4))
+    print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
