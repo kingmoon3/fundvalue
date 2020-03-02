@@ -4,6 +4,7 @@ import operator
 import requests
 import datetime
 import json
+import re
 
 class FundValue():
     """ 从蛋卷基金获取指数信息。
@@ -97,6 +98,18 @@ class FundValue():
             self.trade_days = self.trade_days & set(fdict.keys())
         return fdict
 
+    def get_gz(self, fid):
+        """ 获取当前时间的估值 """
+        url = 'http://fundgz.1234567.com.cn/js/' + fid + '.js'
+        header = {}
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        try:
+            res = requests.get(url=url, headers=header)
+            gz_dict = json.loads(re.match(r'[^(]*[(]({.*})[)][^)]*', res.content.decode('utf-8'), re.S).group(1))
+            return float(gz_dict['gsz'])
+        except Exception as e:
+            return -1
+
     def get_yesterday(self, dt):
         """ 获取指定日期的前一个交易日 """
         for i in range(1, 30):
@@ -121,7 +134,7 @@ class FundValue():
         index = len(pe_value)*n//100-1
         return pe_value[index]
 
-    def get_nprice(self, fid, end_date, n=50, day=365):
+    def get_avg_price(self, fid, end_date, day=365):
         """ 获取 price 均值。
         """
         total = 0
@@ -130,7 +143,7 @@ class FundValue():
         for i in price_list:
             total = total + i
         avg = total/len(price_list)
-        return avg*n/50
+        return avg
 
     def get_weight_pe(self, cur_pe, w30, n=2):
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
@@ -158,20 +171,27 @@ class FundValue():
         if len(self.trade_days) < 650:
             return (-1, -1)
         dt = bdt
+        # 非今天申购，且非交易日，则不予购买。
+        if dt is not None and dt not in self.trade_days:
+            return (0, 0)
+        # 默认采用当天的净值来计算，如果当天购买，则采用实时最新估值。
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-        elif dt not in self.trade_days:
-            return (0, 0)
+            cur_price = self.get_gz(fid)
+        else:
+            cur_price = self.f_info[fid].get(dt)
+
         w30 = self.get_nwater(dt, 30)
         cur_pe = self.peinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, w30, n_pe)
-        wprice = self.get_nprice(fid, dt, 50)
-        cur_price = self.f_info[fid].get(self.get_yesterday(dt))
+
+        wprice = self.get_avg_price(fid, dt)
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
+
         weight = weight_pe * weight_price
+
         capital = round(base * weight, 2)
-        #capital = base
-        amount = 0 if bdt is None else round(capital / self.f_info[fid].get(dt,-1), 2)
+        amount = round(capital/cur_price, 2)
         #print(dt, weight, capital)
         return (capital, amount)
 
@@ -233,14 +253,14 @@ if __name__ == '__main__':
     #fv.init_s50_peinfo()
     #t = 2016
 
-    #fv.init_hs300_peinfo()
-    #t = 2011
+    fv.init_hs300_peinfo()
+    t = 2011
 
     #fv.init_hsbonus_peinfo()
     #t = 2011
 
-    fv.init_gem_peinfo()
-    t = 2018
+    #fv.init_gem_peinfo()
+    #t = 2018
 
     fid = fv.fids[0]
     fv.init_f_info(fid)
