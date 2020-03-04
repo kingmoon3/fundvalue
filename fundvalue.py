@@ -11,7 +11,7 @@ class FundValue():
 
     Attributes:
         peinfo: 字典，保存指数的历史pe，{datetime: pe}
-        f_info: 字典, 保存基金的历史价格，{fid: {datetime: nav}}，fid 为基金编码。
+        f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}，fid 为基金编码，nav为基金净值，nav2为累计净值。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
         fids: 不同指数基金对应的基金列表，目前只有一个。
         index: 不同指数基金对应的名字，如上证50等。
@@ -90,7 +90,33 @@ class FundValue():
         finfo = json.loads(res.content)['data']['items']
         for f in finfo:
             f['date'] = datetime.datetime.strptime(f['date'], '%Y-%m-%d')
-            fdict.setdefault(f['date'], float(f['nav']))
+            # 无法取得累计净值，以当前净值代替。
+            fdict.setdefault(f['date'], (float(f['nav']), float(f['nav'])))
+        self.f_info[fid] = fdict
+        if self.trade_days == {}:
+            self.trade_days = set(fdict.keys())
+        else:
+            self.trade_days = self.trade_days & set(fdict.keys())
+        return fdict
+
+    def parse_jsonp(self, response):
+        return json.loads(re.match(r'[^(]*[(]({.*})[)][^)]*', response.content.decode('utf-8'), re.S).group(1))
+
+    def init_f_info2(self, fid):
+        """ 获取指定基金的价格 """
+        fdict = {}
+        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&pageSize=20&startDate=&endDate=&fundCode=' + fid
+        header = {}
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        header['Referer'] = 'http://fundf10.eastmoney.com/jjjz_' + fid + '.html'
+        res = requests.get(url=url, headers=header)
+        total_item_number = self.parse_jsonp(res)['TotalCount']
+        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&pageSize=' + str(total_item_number) + '&startDate=&endDate=&fundCode=' + fid
+        res = requests.get(url=url, headers=header)
+        finfo = self.parse_jsonp(res)['Data']['LSJZList']
+        for f in finfo:
+            f['date'] = datetime.datetime.strptime(f['FSRQ'], '%Y-%m-%d')
+            fdict.setdefault(f['date'], (float(f['DWJZ']), float(f['LJJZ'])))
         self.f_info[fid] = fdict
         if self.trade_days == {}:
             self.trade_days = set(fdict.keys())
@@ -105,13 +131,14 @@ class FundValue():
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
         try:
             res = requests.get(url=url, headers=header)
-            gz_dict = json.loads(re.match(r'[^(]*[(]({.*})[)][^)]*', res.content.decode('utf-8'), re.S).group(1))
+            gz_dict = self.parse_jsonp(res)
             return float(gz_dict['gsz'])
         except Exception as e:
             return -1
 
     def get_yesterday(self, dt):
         """ 获取指定日期的前一个交易日 """
+        dt = datetime.datetime(dt.year, dt.month, dt.day, 0, 0, 0, 0)
         for i in range(1, 30):
             dt = dt - datetime.timedelta(days=i)
             if dt in self.trade_days:
@@ -137,13 +164,13 @@ class FundValue():
     def get_avg_price(self, fid, end_date, day=365):
         """ 获取 price 均值。
         """
-        total = 0
+        total = [0, 0]
         price_list = [ self.f_info[fid].get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
             if end_date-datetime.timedelta(days=i) in self.trade_days ]
         for i in price_list:
-            total = total + i
-        avg = total/len(price_list)
-        return avg
+            total[0] = total[0] + i[0]
+            total[1] = total[1] + i[1]
+        return (total[0]/len(price_list), total[1]/len(price_list))
 
     def get_weight_pe(self, cur_pe, w30, n=2):
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
@@ -164,6 +191,13 @@ class FundValue():
         # 加强 price 的权重，越低越买
         return (wprice/cur_price) ** n
 
+    def get_delta_price(self, fid, dt=None):
+        if dt is None:
+            dt = datetime.datetime.now()
+        delta_price = self.f_info[fid].get(self.get_yesterday(dt))
+        delta_price = delta_price[1] - delta_price[0]
+        return delta_price
+
     def buy_1day(self, fid, bdt=None, n_pe=2, n_price=4, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
@@ -177,21 +211,24 @@ class FundValue():
         # 默认采用当天的净值来计算，如果当天购买，则采用实时最新估值。
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-            cur_price = self.get_gz(fid)
+            real_price = self.get_gz(fid)
+            delta_price = self.get_delta_price(fid)
+            cur_price = real_price + delta_price
         else:
-            cur_price = self.f_info[fid].get(dt)
+            real_price = self.f_info[fid].get(dt)[0]
+            cur_price = self.f_info[fid].get(dt)[1]
 
         w30 = self.get_nwater(dt, 30)
         cur_pe = self.peinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, w30, n_pe)
 
-        wprice = self.get_avg_price(fid, dt)
+        wprice = self.get_avg_price(fid, dt)[1]
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
 
         weight = weight_pe * weight_price
 
         capital = round(base * weight, 2)
-        amount = round(capital/cur_price, 2)
+        amount = round(capital/real_price, 2)
         #print(dt, weight, capital)
         return (capital, amount)
 
@@ -207,7 +244,7 @@ class FundValue():
             dt = dt + datetime.timedelta(days=1)
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
-        fprice = float(self.f_info[fid].get(self.get_today(end_date)))
+        fprice = float(self.f_info[fid].get(self.get_today(end_date))[0])
         win = (b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
         return (round(b_capital,2), round(b_amount,2), win)
@@ -263,7 +300,7 @@ if __name__ == '__main__':
     #t = 2018
 
     fid = fv.fids[0]
-    fv.init_f_info(fid)
+    fv.init_f_info2(fid)
 
     for i in range(t, 2020):
         j = i+1
