@@ -183,8 +183,7 @@ class FundValue():
 
     def get_weight_price(self, cur_price, wprice=1, n=4):
         """ 获取 price 权重，默认以1做基准，实际采用前365天的平均价格。
-            超过该价格，则不买，否则多买。在有分红等情况下需考虑复权。
-            经回测上证50，此参数影响较大。
+            超过该价格，则不买，否则多买。
         """
         if cur_price > wprice:
             return 0
@@ -228,7 +227,7 @@ class FundValue():
         weight = weight_pe * weight_price
 
         capital = round(base * weight, 2)
-        amount = round(capital/real_price, 2)
+        amount = round(capital/cur_price, 2)
         #print(dt, weight, capital)
         return (capital, amount)
 
@@ -236,7 +235,7 @@ class FundValue():
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天价格为基准计算盈利。
         """
         days = (end_date - begin_date).days
-        b_capital = 0.01
+        b_capital = 0
         b_amount = 0
         dt = begin_date
         for i in range(days):
@@ -244,10 +243,11 @@ class FundValue():
             dt = dt + datetime.timedelta(days=1)
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
-        fprice = float(self.f_info[fid].get(self.get_today(end_date))[0])
-        win = (b_amount * fprice - b_capital) * 100 / b_capital
+        fprice = float(self.f_info[fid].get(self.get_today(end_date))[1])
+        aprice = 0 if b_capital==0 else round(b_capital/b_amount, 4)
+        win = 0 if b_capital==0 else (b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(b_capital,2), round(b_amount,2), win)
+        return (round(b_capital,2), round(b_amount,2), aprice, win)
 
     def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
