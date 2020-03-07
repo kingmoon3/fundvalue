@@ -144,13 +144,6 @@ class FundValue():
             if dt in self.trade_days:
                 return dt
 
-    def get_today(self, dt):
-        """ 获取指定日期的当前交易日 """
-        for i in range(0, 30):
-            dt = dt - datetime.timedelta(days=i)
-            if dt in self.trade_days:
-                return dt
-
     def get_nwater(self, end_date, n=30, day=365*2):
         """ 获取指定日期的水位线，默认向前搜索2年
             1年风险高，获利高，3年太缓慢了
@@ -239,25 +232,62 @@ class FundValue():
         days = (end_date - begin_date).days
         b_capital = 0
         b_amount = 0
-        dt = begin_date
+        dt = begin_date - datetime.timedelta(days=1)
+        # 获取最高盈利点
+        maxg = [0, dt]
         for i in range(days):
-            res = self.buy_1day(fid, dt, n_pe, n_price, base)
             dt = dt + datetime.timedelta(days=1)
+            if dt not in self.trade_days:
+                continue
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
-        fprice = float(self.f_info[fid].get(self.get_today(end_date))[1])
+            fprice = float(self.f_info[fid].get(dt)[1])
+            if int(b_capital) > 0:
+                g = round((fprice*b_amount-b_capital)/b_capital*100, 2)
+                if g > maxg[0]:
+                    maxg[0] = g
+                    maxg[1] = dt.strftime('%Y-%m-%d')
+        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
         avg_price = 0 if b_capital==0 else round(b_capital/b_amount, 4)
         win = 0 if b_capital==0 else (b_amount*fprice-b_capital-b_capital*fee/100) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(b_capital,2), round(b_amount,2), avg_price, win)
+        return (round(b_capital,2), round(b_amount,2), maxg, win)
 
-    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
+    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
             为增加盈利，会将当前已赎回的钱再去申购基金，由于很难确定申购额度，导致最终盈利很难超过长期持有。
             回测结果显示做波段不如长期持有。
             每天无脑定投固定金额毫无意义。
         """
-        pass
+        days = (end_date - begin_date).days
+        e_capital = 0
+        t_capital = 0
+        b_capital = 0
+        b_amount = 0
+        dt = begin_date - datetime.timedelta(days=1)
+        for i in range(days):
+            dt = dt + datetime.timedelta(days=1)
+            if dt not in self.trade_days:
+                continue
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
+            t_capital = t_capital + res[0]
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
+            fprice = float(self.f_info[fid].get(dt)[1])
+            if e_capital*0.01 > res[0] and int(res[0])>0:
+                e_capital = e_capital * 0.99
+                b_capital = b_capital + e_capital*0.01
+                b_amount = b_amount + e_capital*0.01*res[1]/res[0]
+            if fprice*b_amount > 1.1*b_capital:
+                e_capital = e_capital + fprice*b_amount
+                print((e_capital, dt))
+                b_capital = 0
+                b_amount = 0
+        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
+        win = 0 if b_capital+e_capital==0 else (b_amount*fprice+e_capital-t_capital) * 100 / t_capital
+        win = str(round(win, 2)) + '%'
+        return (round(t_capital,2), round(e_capital,2), round(b_amount, 2), win)
 
 
 if __name__ == '__main__':
