@@ -33,17 +33,21 @@ class FundValue():
         self.trade_days = {}
         self.index_info = index_list[index_key]
 
-    def init_pbeinfo(self, url, index_vq):
-        """ 获取pe/pb的通用接口 """
+    def init_index_pbeinfo(self, time='all'):
+        """ 获取pe/pb的通用接口，time可以为1y, 3y """
         pedict = {}
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
+            self.index_info['index_vq'],
+            self.index_info['index_code'],
+            time)
         res = requests.get(url=url, headers=header)
-        pbe_name = 'index_eva_' + index_vq + '_growths'
+        pbe_name = 'index_eva_' + self.index_info['index_vq'] + '_growths'
         pbeinfo = json.loads(res.content)['data'][pbe_name]
         for pe in pbeinfo:
             pe['ts'] = datetime.datetime.fromtimestamp(pe['ts'] // 1000)
-            pedict.setdefault(pe['ts'], pe[index_vq])
+            pedict.setdefault(pe['ts'], pe.get(self.index_info['index_vq']))
         self.pbeinfo = pedict
         if self.trade_days == {}:
             self.trade_days = set(pedict.keys())
@@ -51,20 +55,12 @@ class FundValue():
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
 
-    def init_index_pbeinfo(self, time='all'):
-        """ 获取指定index的pe或者pb，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
-            self.index_info['index_vq'],
-            self.index_info['index_code'],
-            time)
-        return self.init_pbeinfo(url, self.index_info['index_vq'])
-
     def init_f_info(self, fid):
         """ 获取指定基金的价格，只能获取当前净值 """
         fdict = {}
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=10'
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=10'
         res = requests.get(url=url, headers=header)
         total_item_number = json.loads(res.content)['data']['total_items']
         url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=' + str(total_item_number)
