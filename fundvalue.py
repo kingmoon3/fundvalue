@@ -10,72 +10,54 @@ class FundValue():
     """ 从蛋卷基金获取指数信息。
 
     Attributes:
-        peinfo: 字典，保存指数的历史pe，{datetime: pe}
+        index_list: 字典，保存所有指数和对应基金的信息，key为助记符
+        pbeinfo: 字典，保存指数的历史pe/pb，{datetime: pe}
         f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}，fid 为基金编码，nav为基金净值，nav2为累计净值。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
-        fids: 不同指数基金对应的基金列表，目前只有一个。
-        index: 不同指数基金对应的名字，如上证50等。
+        index_info: 字典，根据 index_key 获取指定指数和对应基金的基础信息。
     """
 
-    def __init__(self):
+    def __init__(self, index_key):
         """ 初始化数据结构 """
-        self.peinfo = {}
+        index_list = {
+            's50':{ 'index_code' : 'SH000016', 'index_name' : u'上证50', 'index_fids' : ['001548', ], 'index_vq': 'pe', }, 
+            'hs300': { 'index_code' : 'SH000300', 'index_name' : u'沪深300', 'index_fids' : ['100038', ], 'index_vq': 'pe', }, 
+            'hsbonus': { 'index_code' : 'SH000922', 'index_name' : u'中证红利', 'index_fids' : ['100032', ], 'index_vq': 'pe', },
+            'sbonus': { 'index_code' : 'SH000015', 'index_name' : u'上证红利', 'index_fids' : ['510880', ], 'index_vq': 'pe', }, 
+            'gem' : { 'index_code' : 'SZ399006', 'index_name' : u'创业板', 'index_fids' : ['003765', ], 'index_vq': 'pe', }, 
+            'hs500': { 'index_code' : 'SH000905', 'index_name' : u'中证500', 'index_fids' : ['161017', ], 'index_vq': 'pe', },
+            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', }
+        }
+        self.pbeinfo = {}
         self.f_info = {}
         self.trade_days = {}
-        self.fids = []
-        self.index = ''
+        self.index_info = index_list[index_key]
 
-    def init_peinfo(self, url):
-        """ 获取pe的通用接口 """
+    def init_pbeinfo(self, url, index_vq):
+        """ 获取pe/pb的通用接口 """
         pedict = {}
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
         res = requests.get(url=url, headers=header)
-        peinfo = json.loads(res.content)['data']['index_eva_pe_growths']
-        for pe in peinfo:
+        pbe_name = 'index_eva_' + index_vq + '_growths'
+        pbeinfo = json.loads(res.content)['data'][pbe_name]
+        for pe in pbeinfo:
             pe['ts'] = datetime.datetime.fromtimestamp(pe['ts'] // 1000)
-            pedict.setdefault(pe['ts'], pe['pe'])
-        self.peinfo = pedict
+            pedict.setdefault(pe['ts'], pe[index_vq])
+        self.pbeinfo = pedict
         if self.trade_days == {}:
             self.trade_days = set(pedict.keys())
         else:
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
 
-    def init_s50_peinfo(self, time='all'):
-        """ 获取上证50的pe，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000016?day=' + time
-        self.fids = ['001548', ]
-        self.index = u'上证50'
-        return self.init_peinfo(url)
-
-    def init_hs300_peinfo(self, time='all'):
-        """ 获取沪深300的pe，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000300?day=' + time
-        self.fids = ['100038', ]
-        self.index = u'沪深300'
-        return self.init_peinfo(url)
-
-    def init_hsbonus_peinfo(self, time='all'):
-        """ 获取中证红利的pe，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000922?day=' + time
-        self.fids = ['100032', ]
-        self.index = u'中证红利'
-        return self.init_peinfo(url)
-
-    def init_sbonus_peinfo(self, time='all'):
-        """ 获取上证红利的pe，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SH000015?day=' + time
-        self.fids = ['510880', ]
-        self.index = u'上证红利'
-        return self.init_peinfo(url)
-
-    def init_gem_peinfo(self, time='all'):
-        """ 获取创业板的pe，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/pe_history/SZ399006?day=' + time
-        self.fids = ['003765', ]
-        self.index = u'创业板'
-        return self.init_peinfo(url)
+    def init_index_pbeinfo(self, time='all'):
+        """ 获取指定index的pe或者pb，time可以为1y, 3y """
+        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
+            self.index_info['index_vq'],
+            self.index_info['index_code'],
+            time)
+        return self.init_pbeinfo(url, self.index_info['index_vq'])
 
     def init_f_info(self, fid):
         """ 获取指定基金的价格，只能获取当前净值 """
@@ -144,18 +126,11 @@ class FundValue():
             if dt in self.trade_days:
                 return dt
 
-    def get_today(self, dt):
-        """ 获取指定日期的当前交易日 """
-        for i in range(0, 30):
-            dt = dt - datetime.timedelta(days=i)
-            if dt in self.trade_days:
-                return dt
-
     def get_nwater(self, end_date, n=30, day=365*2):
         """ 获取指定日期的水位线，默认向前搜索2年
             1年风险高，获利高，3年太缓慢了
         """
-        pe_value = [ self.peinfo.get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
+        pe_value = [ self.pbeinfo.get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
             if end_date-datetime.timedelta(days=i) in self.trade_days ]
         pe_value.sort()
         index = len(pe_value)*n//100-1
@@ -207,19 +182,21 @@ class FundValue():
         # 非今天申购，且非交易日，则不予购买。
         if dt is not None and dt not in self.trade_days:
             return (0, 0)
-        # 默认采用当天的净值来计算，如果当天购买，则采用实时最新估值。
+        # 如果当天购买，则采用实时最新估值。
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
             real_price = self.get_gz(fid)
             delta_price = self.get_delta_price(fid)
             cur_price = real_price + delta_price
+        # 否则采用当天的净值来计算
         else:
             real_price = self.f_info[fid].get(dt)[0]
             cur_price = self.f_info[fid].get(dt)[1]
 
-        w30 = self.get_nwater(dt, 30)
-        cur_pe = self.peinfo.get(self.get_yesterday(dt))
-        weight_pe = self.get_weight_pe(cur_pe, w30, n_pe)
+        # 计算 pe 权重，由于 pe 无法预估，因此采用前一天的 pe 计算
+        wpe = self.get_nwater(dt, 30)
+        cur_pe = self.pbeinfo.get(self.get_yesterday(dt))
+        weight_pe = self.get_weight_pe(cur_pe, wpe, n_pe)
 
         wprice = self.get_avg_price(fid, dt)[1]
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
@@ -227,7 +204,7 @@ class FundValue():
         weight = weight_pe * weight_price
 
         capital = round(base * weight, 2)
-        # 以累计净值计算购买数量，如当天购买，则不准确。
+        # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
         #print(dt, weight, capital)
         return (capital, amount)
@@ -239,47 +216,88 @@ class FundValue():
         days = (end_date - begin_date).days
         b_capital = 0
         b_amount = 0
-        dt = begin_date
+        dt = begin_date - datetime.timedelta(days=1)
+        # 获取最高盈利点
+        maxg = [0, dt]
         for i in range(days):
-            res = self.buy_1day(fid, dt, n_pe, n_price, base)
             dt = dt + datetime.timedelta(days=1)
+            if dt not in self.trade_days:
+                continue
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
-        fprice = float(self.f_info[fid].get(self.get_today(end_date))[1])
+            fprice = float(self.f_info[fid].get(dt)[1])
+            if int(b_capital) > 0:
+                g = round((fprice*b_amount-b_capital)/b_capital*100, 2)
+                if g > maxg[0]:
+                    maxg[0] = g
+                    maxg[1] = dt.strftime('%Y-%m-%d')
+        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
         avg_price = 0 if b_capital==0 else round(b_capital/b_amount, 4)
         win = 0 if b_capital==0 else (b_amount*fprice-b_capital-b_capital*fee/100) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(b_capital,2), round(b_amount,2), avg_price, win)
+        return (round(b_capital,2), round(b_amount,2), maxg, win)
 
-    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, base=100):
+    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
             为增加盈利，会将当前已赎回的钱再去申购基金，由于很难确定申购额度，导致最终盈利很难超过长期持有。
             回测结果显示做波段不如长期持有。
             每天无脑定投固定金额毫无意义。
         """
-        pass
+        days = (end_date - begin_date).days
+        e_capital = 0
+        t_capital = 0
+        b_capital = 0
+        b_amount = 0
+        dt = begin_date - datetime.timedelta(days=1)
+        for i in range(days):
+            dt = dt + datetime.timedelta(days=1)
+            if dt not in self.trade_days:
+                continue
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
+            t_capital = t_capital + res[0]
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
+            fprice = float(self.f_info[fid].get(dt)[1])
+            if e_capital*0.01 > res[0] and int(res[0])>0:
+                e_capital = e_capital * 0.99
+                b_capital = b_capital + e_capital*0.01
+                b_amount = b_amount + e_capital*0.01*res[1]/res[0]
+            if fprice*b_amount > 1.1*b_capital:
+                e_capital = e_capital + fprice*b_amount
+                print((e_capital, dt))
+                b_capital = 0
+                b_amount = 0
+        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
+        win = 0 if b_capital+e_capital==0 else (b_amount*fprice+e_capital-t_capital) * 100 / t_capital
+        win = str(round(win, 2)) + '%'
+        return (round(t_capital,2), round(e_capital,2), round(b_amount, 2), win)
 
 
 if __name__ == '__main__':
-    fv = FundValue()
 
-    #fv.init_s50_peinfo()
-    #t = 2016
-    #fee = 0.1
-
-    fv.init_hs300_peinfo()
+    fv = FundValue('hs300')
     t = 2011
     fee = 0.15
 
-    #fv.init_hsbonus_peinfo()
+    #fv = FundValue('s50')
+    #t = 2016
+    #fee = 0.1
+
+    #fv = FundValue('hsbonus')
     #t = 2011
     #fee = 0.12
 
-    #fv.init_gem_peinfo()
+    #fv = FundValue('gem')
     #t = 2018
     #fee = 0.12
 
-    fid = fv.fids[0]
+    #fv = FundValue('bank')
+    #t = 2016
+    #fee = 0.1
+
+    fv.init_index_pbeinfo()
+    fid = fv.index_info['index_fids'][0]
     fv.init_f_info2(fid)
 
     for i in range(t, 2020):
