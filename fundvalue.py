@@ -26,7 +26,9 @@ class FundValue():
             'sbonus': { 'index_code' : 'SH000015', 'index_name' : u'上证红利', 'index_fids' : ['510880', ], 'index_vq': 'pe', }, 
             'gem' : { 'index_code' : 'SZ399006', 'index_name' : u'创业板', 'index_fids' : ['003765', ], 'index_vq': 'pe', }, 
             'hs500': { 'index_code' : 'SH000905', 'index_name' : u'中证500', 'index_fids' : ['000478', ], 'index_vq': 'pe', },
-            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', }
+            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', },
+            'hsxf': { 'index_code' : 'SH000932', 'index_name' : u'中证消费', 'index_fids' : ['000248', ], 'index_vq': 'pe', },
+            'hswine': { 'index_code' : 'SZ399997', 'index_name' : u'中证白酒', 'index_fids' : ['161725', ], 'index_vq': 'pe', },
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -147,6 +149,8 @@ class FundValue():
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
             经回测上证50，此参数对购买影响不大。
         """
+        if n == 0:
+            return 1
         if cur_pe > w30:
             return 0
         # 加强 pe 的权重，越低越买
@@ -202,7 +206,8 @@ class FundValue():
         capital = round(base * weight, 2)
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        #print(dt, weight, capital)
+        #if dt.year == 2018:
+        #    print(dt, weight, capital)
         return (capital, amount)
 
     def buy_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
@@ -308,13 +313,21 @@ if __name__ == '__main__':
     #t = 2016
     #fee = 0.1
 
+    #fv = FundValue('hs500')
+    #t = 2015
+    #fee = 0.12
+
     #fv = FundValue('gem')
     #t = 2018
     #fee = 0.12
 
-    #fv = FundValue('hs500')
-    #t = 2015
-    #fee = 0.12
+    #fv = FundValue('hsxf')
+    #t = 2016
+    #fee = 0.1
+
+    fv = FundValue('hswine')
+    t = 2016
+    fee = 0.1
 
     fv.init_index_pbeinfo()
     fid = fv.index_info['index_fids'][0]
