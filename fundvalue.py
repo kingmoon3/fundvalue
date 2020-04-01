@@ -25,25 +25,31 @@ class FundValue():
             'hsbonus': { 'index_code' : 'SH000922', 'index_name' : u'中证红利', 'index_fids' : ['100032', ], 'index_vq': 'pe', },
             'sbonus': { 'index_code' : 'SH000015', 'index_name' : u'上证红利', 'index_fids' : ['510880', ], 'index_vq': 'pe', }, 
             'gem' : { 'index_code' : 'SZ399006', 'index_name' : u'创业板', 'index_fids' : ['003765', ], 'index_vq': 'pe', }, 
-            'hs500': { 'index_code' : 'SH000905', 'index_name' : u'中证500', 'index_fids' : ['161017', ], 'index_vq': 'pe', },
-            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', }
+            'hs500': { 'index_code' : 'SH000905', 'index_name' : u'中证500', 'index_fids' : ['000478', ], 'index_vq': 'pe', },
+            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', },
+            'hsxf': { 'index_code' : 'SH000932', 'index_name' : u'中证消费', 'index_fids' : ['000248', ], 'index_vq': 'pe', },
+            'hswine': { 'index_code' : 'SZ399997', 'index_name' : u'中证白酒', 'index_fids' : ['161725', ], 'index_vq': 'pe', },
         }
         self.pbeinfo = {}
         self.f_info = {}
         self.trade_days = {}
         self.index_info = index_list[index_key]
 
-    def init_pbeinfo(self, url, index_vq):
-        """ 获取pe/pb的通用接口 """
+    def init_index_pbeinfo(self, time='all'):
+        """ 获取pe/pb的通用接口，time可以为1y, 3y """
         pedict = {}
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
+            self.index_info['index_vq'],
+            self.index_info['index_code'],
+            time)
         res = requests.get(url=url, headers=header)
-        pbe_name = 'index_eva_' + index_vq + '_growths'
+        pbe_name = 'index_eva_' + self.index_info['index_vq'] + '_growths'
         pbeinfo = json.loads(res.content)['data'][pbe_name]
         for pe in pbeinfo:
             pe['ts'] = datetime.datetime.fromtimestamp(pe['ts'] // 1000)
-            pedict.setdefault(pe['ts'], pe[index_vq])
+            pedict.setdefault(pe['ts'], pe.get(self.index_info['index_vq']))
         self.pbeinfo = pedict
         if self.trade_days == {}:
             self.trade_days = set(pedict.keys())
@@ -51,20 +57,12 @@ class FundValue():
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
 
-    def init_index_pbeinfo(self, time='all'):
-        """ 获取指定index的pe或者pb，time可以为1y, 3y """
-        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
-            self.index_info['index_vq'],
-            self.index_info['index_code'],
-            time)
-        return self.init_pbeinfo(url, self.index_info['index_vq'])
-
     def init_f_info(self, fid):
         """ 获取指定基金的价格，只能获取当前净值 """
         fdict = {}
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=10'
         header = {}
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=10'
         res = requests.get(url=url, headers=header)
         total_item_number = json.loads(res.content)['data']['total_items']
         url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=' + str(total_item_number)
@@ -151,6 +149,8 @@ class FundValue():
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
             经回测上证50，此参数对购买影响不大。
         """
+        if n == 0:
+            return 1
         if cur_pe > w30:
             return 0
         # 加强 pe 的权重，越低越买
@@ -206,7 +206,8 @@ class FundValue():
         capital = round(base * weight, 2)
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        #print(dt, weight, capital)
+        #if dt.year == 2018:
+        #    print(dt, weight, capital)
         return (capital, amount)
 
     def buy_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
@@ -238,40 +239,60 @@ class FundValue():
         win = str(round(win, 2)) + '%'
         return (round(b_capital,2), round(b_amount,2), maxg, win)
 
-    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
-        """ 长期购买一段时间，用于测试。默认买100块钱。超过70水位线则卖出。
-            为增加盈利，会将当前已赎回的钱再去申购基金，由于很难确定申购额度，导致最终盈利很难超过长期持有。
-            回测结果显示做波段不如长期持有。
-            每天无脑定投固定金额毫无意义。
+    def bs_fixed(self, fid, dt, bscapital):
+        for i in range(10):
+            dt = dt + datetime.timedelta(days=i)
+            if dt in self.trade_days:
+                fprice = float(self.f_info[fid].get(dt)[1])
+                amount = round(bscapital/fprice, 2)
+                return amount
+
+    def rebalance(self, fprice, nprice, hold_amount, hold_capital, ratio):
+        total_value = fprice*hold_amount+hold_capital
+        cpratio = fprice*hold_amount/total_value
+        bratio = 0.10
+        sratio = 0.10
+        if cpratio < (ratio*(1-bratio))/((ratio*(1-bratio))+(1-ratio)):
+            b_capital = total_value*ratio - fprice*hold_amount
+            b_capital = round(min(b_capital, hold_capital), 2)
+            b_amount = round(b_capital/nprice, 2)
+            return (b_capital, b_amount)
+        if cpratio > (ratio*(1+sratio))/((ratio*(1+sratio))+(1-ratio)):
+            s_capital = fprice*hold_amount - total_value*ratio
+            s_amount = s_capital/fprice
+            s_amount = round(min(s_amount, hold_amount), 2)
+            s_capital = round(nprice*s_amount, 2)
+            return (-s_capital, -s_amount)
+        return (0, 0)
+
+    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0):
+        """ 采用自动均衡机制，持仓和现金比例为1:1，盈利或亏损超过5%则调仓。
         """
         days = (end_date - begin_date).days
-        e_capital = 0
-        t_capital = 0
-        b_capital = 0
-        b_amount = 0
+        base = 10000
+        ratio = 0.8
         dt = begin_date - datetime.timedelta(days=1)
-        for i in range(days):
+        hold_amount = self.bs_fixed(fid, begin_date, base*ratio)
+        hold_capital = round(base*(1-ratio), 2)
+        fee_cost = base*ratio*fee
+
+        for i in range(7, days):
             dt = dt + datetime.timedelta(days=1)
             if dt not in self.trade_days:
                 continue
-            res = self.buy_1day(fid, dt, n_pe, n_price, base)
-            t_capital = t_capital + res[0]
-            b_capital = b_capital + res[0]
-            b_amount = b_amount + res[1]
-            fprice = float(self.f_info[fid].get(dt)[1])
-            if e_capital*0.01 > res[0] and int(res[0])>0:
-                e_capital = e_capital * 0.99
-                b_capital = b_capital + e_capital*0.01
-                b_amount = b_amount + e_capital*0.01*res[1]/res[0]
-            if fprice*b_amount > 1.1*b_capital:
-                e_capital = e_capital + fprice*b_amount
-                print((e_capital, dt))
-                b_capital = 0
-                b_amount = 0
+            fprice = float(self.f_info[fid].get(self.get_yesterday(dt))[1])
+            nprice = float(self.f_info[fid].get(dt)[1])
+            # bs_capital, amount>0 为买，bs_capital, amount<0 为卖。
+            (bs_capital, bs_amount) = self.rebalance(fprice, nprice, hold_amount, hold_capital, ratio)
+            hold_capital = round(hold_capital - bs_capital, 2)
+            hold_amount = round(hold_amount + bs_amount, 2)
+            fee_cost = round(fee_cost + abs(bs_capital*fee/100), 2)
+            if int(bs_capital) != 0:
+                print((dt, bs_capital, bs_amount, hold_capital, hold_amount))
         fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
-        win = 0 if b_capital+e_capital==0 else (b_amount*fprice+e_capital-t_capital) * 100 / t_capital
+        win = (hold_amount*fprice+hold_capital-base-fee_cost) * 100 / base
         win = str(round(win, 2)) + '%'
-        return (round(t_capital,2), round(e_capital,2), round(b_amount, 2), win)
+        return (round(hold_capital,2), round(fprice*hold_amount, 2), -fee_cost, win)
 
 
 if __name__ == '__main__':
@@ -288,13 +309,25 @@ if __name__ == '__main__':
     #t = 2011
     #fee = 0.12
 
+    #fv = FundValue('bank')
+    #t = 2016
+    #fee = 0.1
+
+    #fv = FundValue('hs500')
+    #t = 2015
+    #fee = 0.12
+
     #fv = FundValue('gem')
     #t = 2018
     #fee = 0.12
 
-    #fv = FundValue('bank')
+    #fv = FundValue('hsxf')
     #t = 2016
     #fee = 0.1
+
+    fv = FundValue('hswine')
+    t = 2016
+    fee = 0.1
 
     fv.init_index_pbeinfo()
     fid = fv.index_info['index_fids'][0]
@@ -308,6 +341,6 @@ if __name__ == '__main__':
         print(fv.buy_longtime(fid, bd, ed, 2, 4))
     bd = datetime.datetime(t, 1, 1)
     ed = datetime.datetime(2020, 1, 1)
-    #print(fv.bs_longtime(fid, bd, ed, 2, 4))
     print(fv.buy_longtime(fid, bd, ed, 2, 4, fee))
     print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
+    #print(fv.bs_longtime(fid, bd, ed, 2, 4, fee))
