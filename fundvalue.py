@@ -29,6 +29,7 @@ class FundValue():
             'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', },
             'hsxf': { 'index_code' : 'SH000932', 'index_name' : u'中证消费', 'index_fids' : ['000248', ], 'index_vq': 'pe', },
             'hswine': { 'index_code' : 'SZ399997', 'index_name' : u'中证白酒', 'index_fids' : ['161725', ], 'index_vq': 'pe', },
+            'hshouse': { 'index_code' : 'SZ399393', 'index_name' : u'国证地产', 'index_fids' : ['160218', ], 'index_vq': 'pb', },
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -327,6 +328,10 @@ if __name__ == '__main__':
 
     fv = FundValue('hswine')
     t = 2016
+    fee = 0.1
+
+    fv = FundValue('hshouse')
+    t = 2014
     fee = 0.1
 
     fv.init_index_pbeinfo()
