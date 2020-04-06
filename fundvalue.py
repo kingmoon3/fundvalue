@@ -153,6 +153,9 @@ class FundValue():
         try:
             res = requests.get(url=url, headers=header)
             gz_dict = self.parse_jsonp(res)
+            dnow = datetime.datetime.now().strftime('%Y-%m-%d')
+            if dnow != gz_dict['gztime'].split(' ')[0]:
+                return -1
             return float(gz_dict['gsz'])
         except Exception as e:
             print(e)
@@ -232,6 +235,9 @@ class FundValue():
             dt = datetime.datetime.combine(
                 datetime.date.today(), datetime.datetime.min.time())
             real_price = self.get_gz(fid)
+            # 如果取估值有问题，可能是假日，不申购。
+            if real_price < 0:
+                return (0, 0)
             delta_price = self.get_delta_price(fid)
             cur_price = real_price + delta_price
         # 否则采用当天的净值来计算
