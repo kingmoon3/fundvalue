@@ -1,10 +1,10 @@
 # -*- coding:utf-8 -*-
 
-import operator
 import requests
 import datetime
 import json
 import re
+
 
 class FundValue():
     """ 从蛋卷基金获取指数信息。
@@ -12,7 +12,8 @@ class FundValue():
     Attributes:
         index_list: 字典，保存所有指数和对应基金的信息，key为助记符
         pbeinfo: 字典，保存指数的历史pe/pb，{datetime: pe}
-        f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}，fid 为基金编码，nav为基金净值，nav2为累计净值。
+        f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}
+        fid 为基金编码，nav为基金净值，nav2为累计净值。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
         index_info: 字典，根据 index_key 获取指定指数和对应基金的基础信息。
     """
@@ -20,15 +21,36 @@ class FundValue():
     def __init__(self, index_key):
         """ 初始化数据结构 """
         index_list = {
-            's50':{ 'index_code' : 'SH000016', 'index_name' : u'上证50', 'index_fids' : ['001548', ], 'index_vq': 'pe', }, 
-            'hs300': { 'index_code' : 'SH000300', 'index_name' : u'沪深300', 'index_fids' : ['100038', ], 'index_vq': 'pe', }, 
-            'hsbonus': { 'index_code' : 'SH000922', 'index_name' : u'中证红利', 'index_fids' : ['100032', ], 'index_vq': 'pe', },
-            'sbonus': { 'index_code' : 'SH000015', 'index_name' : u'上证红利', 'index_fids' : ['510880', ], 'index_vq': 'pe', }, 
-            'gem' : { 'index_code' : 'SZ399006', 'index_name' : u'创业板', 'index_fids' : ['003765', ], 'index_vq': 'pe', }, 
-            'hs500': { 'index_code' : 'SH000905', 'index_name' : u'中证500', 'index_fids' : ['000478', ], 'index_vq': 'pe', },
-            'bank': { 'index_code' : 'SZ399986', 'index_name' : u'中证银行', 'index_fids' : ['001594', ], 'index_vq': 'pb', },
-            'hsxf': { 'index_code' : 'SH000932', 'index_name' : u'中证消费', 'index_fids' : ['000248', ], 'index_vq': 'pe', },
-            'hswine': { 'index_code' : 'SZ399997', 'index_name' : u'中证白酒', 'index_fids' : ['161725', ], 'index_vq': 'pe', },
+            's50': {
+                'index_code': 'SH000016', 'index_name': u'上证50',
+                'index_fids': ['001548', ], 'index_vq': 'pe'},
+            'hs300': {
+                'index_code': 'SH000300', 'index_name': u'沪深300',
+                'index_fids': ['100038', ], 'index_vq': 'pe'},
+            'hsbonus': {
+                'index_code': 'SH000922', 'index_name': u'中证红利',
+                'index_fids': ['100032', ], 'index_vq': 'pe', },
+            'sbonus': {
+                'index_code': 'SH000015', 'index_name': u'上证红利',
+                'index_fids': ['510880', ], 'index_vq': 'pe', },
+            'gem': {
+                'index_code': 'SZ399006', 'index_name': u'创业板',
+                'index_fids': ['003765', ], 'index_vq': 'pe'},
+            'hs500': {
+                'index_code': 'SH000905', 'index_name': u'中证500',
+                'index_fids': ['000478', ], 'index_vq': 'pe'},
+            'bank': {
+                'index_code': 'SZ399986', 'index_name': u'中证银行',
+                'index_fids': ['001594', ], 'index_vq': 'pb'},
+            'hsxf': {
+                'index_code': 'SH000932', 'index_name': u'中证消费',
+                'index_fids': ['000248', ], 'index_vq': 'pe'},
+            'hswine': {
+                'index_code': 'SZ399997', 'index_name': u'中证白酒',
+                'index_fids': ['161725', ], 'index_vq': 'pe'},
+            'hshouse': {
+                'index_code': 'SZ399393', 'index_name': u'国证地产',
+                'index_fids': ['160218', ], 'index_vq': 'pb'},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -39,11 +61,14 @@ class FundValue():
         """ 获取pe/pb的通用接口，time可以为1y, 3y """
         pedict = {}
         header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-        url = 'https://danjuanapp.com/djapi/index_eva/{}_history/{}?day={}'.format(
-            self.index_info['index_vq'],
-            self.index_info['index_code'],
-            time)
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+            AppleWebKit/537.36 (KHTML, like Gecko) \
+            Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/' +\
+            'index_eva/{}_history/{}?day={}'.format(
+                self.index_info['index_vq'],
+                self.index_info['index_code'],
+                time)
         res = requests.get(url=url, headers=header)
         pbe_name = 'index_eva_' + self.index_info['index_vq'] + '_growths'
         pbeinfo = json.loads(res.content)['data'][pbe_name]
@@ -61,11 +86,15 @@ class FundValue():
         """ 获取指定基金的价格，只能获取当前净值 """
         fdict = {}
         header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=10'
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+            AppleWebKit/537.36 (KHTML, like Gecko) \
+            Chrome/79.0.3945.130 Safari/537.36'
+        url = 'https://danjuanapp.com/djapi/fund/nav/history/'\
+            + str(fid) + '?page=1&size=10'
         res = requests.get(url=url, headers=header)
         total_item_number = json.loads(res.content)['data']['total_items']
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/' + str(fid) + '?page=1&size=' + str(total_item_number)
+        url = 'https://danjuanapp.com/djapi/fund/nav/history/'\
+            + str(fid) + '?page=1&size=' + str(total_item_number)
         res = requests.get(url=url, headers=header)
         finfo = json.loads(res.content)['data']['items']
         for f in finfo:
@@ -80,18 +109,28 @@ class FundValue():
         return fdict
 
     def parse_jsonp(self, response):
-        return json.loads(re.match(r'[^(]*[(]({.*})[)][^)]*', response.content.decode('utf-8'), re.S).group(1))
+        return json.loads(
+            re.match(
+                r'[^(]*[(]({.*})[)][^)]*',
+                response.content.decode('utf-8'),
+                re.S).group(1))
 
     def init_f_info2(self, fid):
         """ 获取指定基金的价格，可以获取当前净值和累计净值 """
         fdict = {}
-        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&pageSize=20&startDate=&endDate=&fundCode=' + fid
+        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery\
+            &pageIndex=1&pageSize=20&startDate=&endDate=&fundCode=' + fid
         header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-        header['Referer'] = 'http://fundf10.eastmoney.com/jjjz_' + fid + '.html'
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+            AppleWebKit/537.36 (KHTML, like Gecko) \
+            Chrome/79.0.3945.130 Safari/537.36'
+        header['Referer'] = 'http://fundf10.eastmoney.com/jjjz_'\
+            + fid + '.html'
         res = requests.get(url=url, headers=header)
         total_item_number = self.parse_jsonp(res)['TotalCount']
-        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&pageSize=' + str(total_item_number) + '&startDate=&endDate=&fundCode=' + fid
+        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery\
+            &pageIndex=1&pageSize=' + str(total_item_number)\
+            + '&startDate=&endDate=&fundCode=' + fid
         res = requests.get(url=url, headers=header)
         finfo = self.parse_jsonp(res)['Data']['LSJZList']
         for f in finfo:
@@ -108,12 +147,15 @@ class FundValue():
         """ 获取当前时间的估值 """
         url = 'http://fundgz.1234567.com.cn/js/' + fid + '.js'
         header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+            AppleWebKit/537.36 (KHTML, like Gecko) \
+            Chrome/79.0.3945.130 Safari/537.36'
         try:
             res = requests.get(url=url, headers=header)
             gz_dict = self.parse_jsonp(res)
             return float(gz_dict['gsz'])
         except Exception as e:
+            print(e)
             return -1
 
     def get_yesterday(self, dt):
@@ -128,8 +170,9 @@ class FundValue():
         """ 获取指定日期的水位线，默认向前搜索2年
             1年风险高，获利高，3年太缓慢了
         """
-        pe_value = [ self.pbeinfo.get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
-            if end_date-datetime.timedelta(days=i) in self.trade_days ]
+        pe_value = [self.pbeinfo.get(end_date-datetime.timedelta(days=i))
+                    for i in range(1, day)
+                    if end_date-datetime.timedelta(days=i) in self.trade_days]
         pe_value.sort()
         index = len(pe_value)*n//100-1
         return pe_value[index]
@@ -138,8 +181,10 @@ class FundValue():
         """ 获取 price 均值。
         """
         total = [0, 0]
-        price_list = [ self.f_info[fid].get(end_date-datetime.timedelta(days=i)) for i in range(1, day)\
-            if end_date-datetime.timedelta(days=i) in self.trade_days ]
+        price_list = [
+            self.f_info[fid].get(end_date-datetime.timedelta(days=i))
+            for i in range(1, day)
+            if end_date-datetime.timedelta(days=i) in self.trade_days]
         for i in price_list:
             total[0] = total[0] + i[0]
             total[1] = total[1] + i[1]
@@ -184,7 +229,8 @@ class FundValue():
             return (0, 0)
         # 如果当天购买，则采用实时最新估值。
         if dt is None:
-            dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+            dt = datetime.datetime.combine(
+                datetime.date.today(), datetime.datetime.min.time())
             real_price = self.get_gz(fid)
             delta_price = self.get_delta_price(fid)
             cur_price = real_price + delta_price
@@ -206,11 +252,13 @@ class FundValue():
         capital = round(base * weight, 2)
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        #if dt.year == 2018:
+        # if dt.year == 2018:
         #    print(dt, weight, capital)
         return (capital, amount)
 
-    def buy_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
+    def buy_longtime(
+            self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100
+            ):
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
             fee=申购费率*100，在实测中基本可以忽略费率对收益的影响。
         """
@@ -234,10 +282,10 @@ class FundValue():
                     maxg[0] = g
                     maxg[1] = dt.strftime('%Y-%m-%d')
         fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
-        avg_price = 0 if b_capital==0 else round(b_capital/b_amount, 4)
-        win = 0 if b_capital==0 else (b_amount*fprice-b_capital-b_capital*fee/100) * 100 / b_capital
+        win = 0 if b_capital == 0 else (
+            b_amount*fprice-b_capital-b_capital*fee/100) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(b_capital,2), round(b_amount,2), maxg, win)
+        return (round(b_capital, 2), round(b_amount, 2), maxg, win)
 
     def bs_fixed(self, fid, dt, bscapital):
         for i in range(10):
@@ -283,7 +331,8 @@ class FundValue():
             fprice = float(self.f_info[fid].get(self.get_yesterday(dt))[1])
             nprice = float(self.f_info[fid].get(dt)[1])
             # bs_capital, amount>0 为买，bs_capital, amount<0 为卖。
-            (bs_capital, bs_amount) = self.rebalance(fprice, nprice, hold_amount, hold_capital, ratio)
+            (bs_capital, bs_amount) = self.rebalance(
+                fprice, nprice, hold_amount, hold_capital, ratio)
             hold_capital = round(hold_capital - bs_capital, 2)
             hold_amount = round(hold_amount + bs_amount, 2)
             fee_cost = round(fee_cost + abs(bs_capital*fee/100), 2)
@@ -292,7 +341,11 @@ class FundValue():
         fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
         win = (hold_amount*fprice+hold_capital-base-fee_cost) * 100 / base
         win = str(round(win, 2)) + '%'
-        return (round(hold_capital,2), round(fprice*hold_amount, 2), -fee_cost, win)
+        return (
+            round(hold_capital, 2),
+            round(fprice*hold_amount, 2),
+            -fee_cost,
+            win)
 
 
 if __name__ == '__main__':
@@ -301,32 +354,36 @@ if __name__ == '__main__':
     t = 2011
     fee = 0.15
 
-    #fv = FundValue('s50')
-    #t = 2016
-    #fee = 0.1
+    # fv = FundValue('s50')
+    # t = 2016
+    # fee = 0.1
 
-    #fv = FundValue('hsbonus')
-    #t = 2011
-    #fee = 0.12
+    # fv = FundValue('hsbonus')
+    # t = 2011
+    # fee = 0.12
 
-    #fv = FundValue('bank')
-    #t = 2016
-    #fee = 0.1
+    # fv = FundValue('bank')
+    # t = 2016
+    # fee = 0.1
 
-    #fv = FundValue('hs500')
-    #t = 2015
-    #fee = 0.12
+    # fv = FundValue('hs500')
+    # t = 2015
+    # fee = 0.12
 
-    #fv = FundValue('gem')
-    #t = 2018
-    #fee = 0.12
+    # fv = FundValue('gem')
+    # t = 2018
+    # fee = 0.12
 
-    #fv = FundValue('hsxf')
-    #t = 2016
-    #fee = 0.1
+    # fv = FundValue('hsxf')
+    # t = 2016
+    # fee = 0.1
 
     fv = FundValue('hswine')
     t = 2016
+    fee = 0.1
+
+    fv = FundValue('hshouse')
+    t = 2014
     fee = 0.1
 
     fv.init_index_pbeinfo()
@@ -343,4 +400,4 @@ if __name__ == '__main__':
     ed = datetime.datetime(2020, 1, 1)
     print(fv.buy_longtime(fid, bd, ed, 2, 4, fee))
     print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
-    #print(fv.bs_longtime(fid, bd, ed, 2, 4, fee))
+    # print(fv.bs_longtime(fid, bd, ed, 2, 4, fee))
