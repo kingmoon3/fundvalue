@@ -4,6 +4,7 @@ import requests
 import datetime
 import json
 import re
+import math
 
 
 class FundValue():
@@ -197,7 +198,7 @@ class FundValue():
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
             经回测上证50，此参数对购买影响不大。
         """
-        if n == 0:
+        if n < 0:
             return 1
         if cur_pe > w30:
             return 0
@@ -255,7 +256,7 @@ class FundValue():
 
         weight = weight_pe * weight_price
 
-        capital = round(base * weight, 2)
+        capital = math.ceil(base * weight)
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
         # if dt.year == 2018:
