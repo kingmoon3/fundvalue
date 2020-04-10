@@ -256,7 +256,7 @@ class FundValue():
 
         weight = weight_pe * weight_price
 
-        capital = math.ceil(base * weight)
+        capital = int(math.ceil(base*weight))
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
         # if dt.year == 2018:
