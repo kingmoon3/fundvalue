@@ -39,7 +39,7 @@ class FundValue():
                 'index_fids': ['003765', ], 'index_vq': 'pe'},
             'hs500': {
                 'index_code': 'SH000905', 'index_name': u'中证500',
-                'index_fids': ['000478', ], 'index_vq': 'pe'},
+                'index_fids': ['002510', ], 'index_vq': 'pe'},
             'bank': {
                 'index_code': 'SZ399986', 'index_name': u'中证银行',
                 'index_fids': ['001594', ], 'index_vq': 'pb'},
@@ -373,9 +373,9 @@ if __name__ == '__main__':
     # t = 2016
     # fee = 0.1
 
-    # fv = FundValue('hs500')
-    # t = 2015
-    # fee = 0.12
+    fv = FundValue('hs500')
+    t = 2017
+    fee = 0.12
 
     # fv = FundValue('gem')
     # t = 2018
@@ -385,13 +385,13 @@ if __name__ == '__main__':
     # t = 2016
     # fee = 0.1
 
-    fv = FundValue('hswine')
-    t = 2016
-    fee = 0.1
+    # fv = FundValue('hswine')
+    # t = 2016
+    # fee = 0.1
 
-    fv = FundValue('hshouse')
-    t = 2014
-    fee = 0.1
+    # fv = FundValue('hshouse')
+    # t = 2014
+    # fee = 0.1
 
     fv.init_index_pbeinfo()
     fid = fv.index_info['index_fids'][0]
