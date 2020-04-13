@@ -39,7 +39,7 @@ class FundValue():
                 'index_fids': ['003765', ], 'index_vq': 'pe'},
             'hs500': {
                 'index_code': 'SH000905', 'index_name': u'中证500',
-                'index_fids': ['002510', ], 'index_vq': 'pe'},
+                'index_fids': ['003986', ], 'index_vq': 'pe'},
             'bank': {
                 'index_code': 'SZ399986', 'index_name': u'中证银行',
                 'index_fids': ['001594', ], 'index_vq': 'pb'},
@@ -174,25 +174,36 @@ class FundValue():
         """ 获取指定日期的水位线，默认向前搜索2年
             1年风险高，获利高，3年太缓慢了
         """
-        pe_value = [self.pbeinfo.get(end_date-datetime.timedelta(days=i))
-                    for i in range(1, day)
-                    if end_date-datetime.timedelta(days=i) in self.trade_days]
+        pe_value = [
+            self.pbeinfo.get(end_date-datetime.timedelta(days=i))
+            for i in range(1, day)
+            if end_date-datetime.timedelta(days=i) in self.trade_days]
         pe_value.sort()
         index = len(pe_value)*n//100-1
         return pe_value[index]
 
-    def get_avg_price(self, fid, end_date, day=365):
+    def get_avg_price(self, fid, end_date, n=50, day=365):
         """ 获取 price 均值。
         """
         total = [0, 0]
+        dwjz = []
+        ljjz = []
         price_list = [
             self.f_info[fid].get(end_date-datetime.timedelta(days=i))
             for i in range(1, day)
             if end_date-datetime.timedelta(days=i) in self.trade_days]
         for i in price_list:
+            dwjz.append(i[0])
+            ljjz.append(i[1])
             total[0] = total[0] + i[0]
             total[1] = total[1] + i[1]
-        return (total[0]/len(price_list), total[1]/len(price_list))
+        if n == 50:
+            return (total[0]/len(price_list), total[1]/len(price_list))
+        else:
+            dwjz.sort()
+            ljjz.sort()
+            index = len(dwjz)*n//100-1
+            return (dwjz[index], ljjz[index])
 
     def get_weight_pe(self, cur_pe, w30, n=2):
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
@@ -373,9 +384,9 @@ if __name__ == '__main__':
     # t = 2016
     # fee = 0.1
 
-    fv = FundValue('hs500')
-    t = 2017
-    fee = 0.12
+    # fv = FundValue('hs500')
+    # t = 2017
+    # fee = 0.12
 
     # fv = FundValue('gem')
     # t = 2018
