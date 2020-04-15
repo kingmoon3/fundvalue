@@ -365,6 +365,49 @@ class FundValue():
             -fee_cost,
             win)
 
+    def bs_longtime2(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
+        """ 长期购买一段时间，用于测试。默认买100块钱。
+            超过盈利点则卖出，为增加盈利，会将当前已赎回的钱再次全部投入去申购基金。
+            回测 2011.1.1-2020.1.1 沪深300显示：
+                1. 一直不卖出，最终盈利 120%
+                2. 盈利 5% 卖出：操作14次，2014年盈利较方案1增加14%，错过2015-2018年的涨幅，最终盈利21.26%
+                3. 盈利 10% 卖出：操作6次，2014年盈利较方案1增加5%，错过2015-2018年的涨幅，最终盈利27%
+                4. 盈利 100% 卖出：操作2次，最终盈利107%
+        """
+        days = (end_date - begin_date).days
+        sum_capital = 0
+        earn_capital = 0
+        b_capital = 0
+        b_amount = 0
+        dt = begin_date
+        for i in range(days):
+            if dt not in self.trade_days:
+                dt = dt + datetime.timedelta(days=1)
+                continue
+            res = self.buy_1day(fid, dt, n_pe, n_price, base)
+            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.05:
+                earn_capital = earn_capital + self.f_info[fid].get(dt)[1]*b_amount
+                print(('sold', dt, b_amount, earn_capital))
+                b_amount = 0
+                b_capital = 0
+            sum_capital = sum_capital + res[0]
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
+            # 将已赎回的钱再去申购
+            if int(res[0]) > 0 and earn_capital >0:
+                b_capital = b_capital + earn_capital
+                b_amount = b_amount + earn_capital/self.f_info[fid].get(dt)[1]
+                print(('buy', dt, b_amount, earn_capital, self.f_info[fid].get(dt)[1]))
+                earn_capital = 0
+            dt = dt + datetime.timedelta(days=1)
+        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
+        if sum_capital > 0:
+            win = (b_amount * fprice + earn_capital - sum_capital) * 100 / sum_capital
+        else:
+            win = 0
+        win = str(round(win, 2)) + '%'
+        return (round(sum_capital,2), round(b_amount, 2), round(earn_capital, 2), win)
+
 
 if __name__ == '__main__':
 
@@ -418,4 +461,4 @@ if __name__ == '__main__':
     ed = datetime.datetime(2020, 1, 1)
     print(fv.buy_longtime(fid, bd, ed, 2, 4, fee))
     print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
-    # print(fv.bs_longtime(fid, bd, ed, 2, 4, fee))
+    # print(fv.bs_longtime2(fid, bd, ed, 2, 4, fee))
