@@ -113,7 +113,4 @@ dmypy.json
 
 /static/upload/
 /tags
-/mianbao.log.*
-/sendmail.py
-/run.py
 /mailconfig.py
