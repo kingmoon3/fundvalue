@@ -44,7 +44,7 @@ class FundValue():
                 'index_code': 'SZ399986', 'index_name': u'中证银行',
                 'index_fids': ['001594', ], 'index_vq': 'pb'},
             'hsxf': {
-                'index_code': 'SH000932', 'index_name': u'中证消费',
+                'index_code': 'SH000932', 'index_name': u'主要消费',
                 'index_fids': ['000248', ], 'index_vq': 'pe'},
             'hswine': {
                 'index_code': 'SZ399997', 'index_name': u'中证白酒',
@@ -54,7 +54,13 @@ class FundValue():
                 'index_fids': ['160218', ], 'index_vq': 'pb'},
             'hkhs': {
                 'index_code': 'HKHSI', 'index_name': u'恒生指数',
-                'index_fids': ['000948', ], 'index_vq': 'pb'},
+                'index_fids': ['000948', ], 'index_vq': 'pe'},
+            'sz60': {
+                'index_code': 'SZ399701', 'index_name': u'深证基本面60',
+                'index_fids': ['530015', ], 'index_vq': 'pe'},
+            'yy100': {
+                'index_code': 'SH000978', 'index_name': u'医药100',
+                'index_fids': ['001550', ], 'index_vq': 'pe'},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -426,9 +432,9 @@ if __name__ == '__main__':
     # t = 2011
     # fee = 0.12
 
-    # fv = FundValue('bank')
-    # t = 2016
-    # fee = 0.1
+    fv = FundValue('bank')
+    t = 2016
+    fee = 0.1
 
     # fv = FundValue('hs500')
     # t = 2017
@@ -453,6 +459,14 @@ if __name__ == '__main__':
     fv = FundValue('hkhs')
     t = 2016
     fee = 0.12
+
+    fv = FundValue('sz60')
+    t = 2012
+    fee = 0.15
+
+    # fv = FundValue('yy100')
+    # t = 2016
+    # fee = 0.1
 
     fv.init_index_pbeinfo()
     fid = fv.index_info['index_fids'][0]
