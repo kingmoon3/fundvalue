@@ -52,6 +52,9 @@ class FundValue():
             'hshouse': {
                 'index_code': 'SZ399393', 'index_name': u'国证地产',
                 'index_fids': ['160218', ], 'index_vq': 'pb'},
+            'hkhs': {
+                'index_code': 'HKHSI', 'index_name': u'恒生指数',
+                'index_fids': ['000948', ], 'index_vq': 'pb'},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -446,6 +449,10 @@ if __name__ == '__main__':
     # fv = FundValue('hshouse')
     # t = 2014
     # fee = 0.1
+
+    fv = FundValue('hkhs')
+    t = 2016
+    fee = 0.12
 
     fv.init_index_pbeinfo()
     fid = fv.index_info['index_fids'][0]
