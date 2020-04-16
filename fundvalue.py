@@ -22,45 +22,42 @@ class FundValue():
     def __init__(self, index_key):
         """ 初始化数据结构 """
         index_list = {
-            's50': {
-                'index_code': 'SH000016', 'index_name': u'上证50',
-                'index_fids': ['001548', ], 'index_vq': 'pe'},
             'hs300': {
-                'index_code': 'SH000300', 'index_name': u'沪深300',
-                'index_fids': ['100038', ], 'index_vq': 'pe'},
-            'hsbonus': {
-                'index_code': 'SH000922', 'index_name': u'中证红利',
-                'index_fids': ['100032', ], 'index_vq': 'pe', },
-            'sbonus': {
-                'index_code': 'SH000015', 'index_name': u'上证红利',
-                'index_fids': ['510880', ], 'index_vq': 'pe', },
+                'index_code': 'SH000300', 'index_name': u'沪深300', 'index_vq': 'pe',
+                'index_fids': [{'fid': '100038', 'fee': 0.12, 'byear': 2011 }, ]},
+            'sh50': {
+                'index_code': 'SH000016', 'index_name': u'上证50', 'index_vq': 'pe',
+                'index_fids': [{'fid': '001548', 'fee': 0.1, 'byear': 2016 }, ]},
+            'zzbonus': {
+                'index_code': 'SH000922', 'index_name': u'中证红利', 'index_vq': 'pe',
+                'index_fids': [{'fid': '100032', 'fee': 0.15, 'byear': 2010 }, ]},
             'gem': {
-                'index_code': 'SZ399006', 'index_name': u'创业板',
-                'index_fids': ['003765', ], 'index_vq': 'pe'},
-            'hs500': {
-                'index_code': 'SH000905', 'index_name': u'中证500',
-                'index_fids': ['003986', ], 'index_vq': 'pe'},
-            'bank': {
-                'index_code': 'SZ399986', 'index_name': u'中证银行',
-                'index_fids': ['001594', ], 'index_vq': 'pb'},
-            'hsxf': {
-                'index_code': 'SH000932', 'index_name': u'主要消费',
-                'index_fids': ['000248', ], 'index_vq': 'pe'},
-            'hswine': {
-                'index_code': 'SZ399997', 'index_name': u'中证白酒',
-                'index_fids': ['161725', ], 'index_vq': 'pe'},
-            'hshouse': {
-                'index_code': 'SZ399393', 'index_name': u'国证地产',
-                'index_fids': ['160218', ], 'index_vq': 'pb'},
+                'index_code': 'SZ399006', 'index_name': u'创业板', 'index_vq': 'pe',
+                'index_fids': [{'fid': '003765', 'fee': 0.12, 'byear': 2018 }, ]},
+            'zz500': {
+                'index_code': 'SH000905', 'index_name': u'中证500', 'index_vq': 'pe',
+                'index_fids': [{'fid': '003986', 'fee': 0.12, 'byear': 2018 }, ]},
+            'zzbank': {
+                'index_code': 'SZ399986', 'index_name': u'中证银行', 'index_vq': 'pb',
+                'index_fids': [{'fid': '001594', 'fee': 0.1, 'byear': 2016 }, ]},
+            'zzhouse': {
+                'index_code': 'SZ399393', 'index_name': u'国证地产', 'index_vq': 'pb',
+                'index_fids': [{'fid': '160218', 'fee': 0.1, 'byear': 2014 }, ]},
+            'zzxf': {
+                'index_code': 'SH000932', 'index_name': u'主要消费', 'index_vq': 'pe',
+                'index_fids': [{'fid': '000248', 'fee': 0.1, 'byear': 2016 }, ]},
+            'zzwine': {
+                'index_code': 'SZ399997', 'index_name': u'中证白酒', 'index_vq': 'pe',
+                'index_fids': [{'fid': '161725', 'fee': 0.1, 'byear': 2016 }, ]},
             'hkhs': {
-                'index_code': 'HKHSI', 'index_name': u'恒生指数',
-                'index_fids': ['000948', ], 'index_vq': 'pe'},
+                'index_code': 'HKHSI', 'index_name': u'香港恒生', 'index_vq': 'pe',
+                'index_fids': [{'fid': '000948', 'fee': 0.12, 'byear': 2016 }, ]},
             'sz60': {
-                'index_code': 'SZ399701', 'index_name': u'深证基本面60',
-                'index_fids': ['530015', ], 'index_vq': 'pe'},
+                'index_code': 'SZ399701', 'index_name': u'深证基本面60', 'index_vq': 'pe',
+                'index_fids': [{'fid': '530015', 'fee': 0.15, 'byear': 2012 }, ]},
             'yy100': {
-                'index_code': 'SH000978', 'index_name': u'医药100',
-                'index_fids': ['001550', ], 'index_vq': 'pe'},
+                'index_code': 'SH000978', 'index_name': u'医药100', 'index_vq': 'pe',
+                'index_fids': [{'fid': '001550', 'fee': 0.1, 'byear': 2016 }, ]},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -267,7 +264,8 @@ class FundValue():
             cur_price = self.f_info[fid].get(dt)[1]
 
         # 计算 pe 权重，由于 pe 无法预估，因此采用前一天的 pe 计算
-        wpe = self.get_nwater(dt, 30)
+        # 为更安全，pe 标准改用最近1年和最近2年的30水位线的最小值
+        wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
         cur_pe = self.pbeinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, wpe, n_pe)
 
@@ -420,56 +418,13 @@ class FundValue():
 
 if __name__ == '__main__':
 
-    fv = FundValue('hs300')
-    t = 2011
-    fee = 0.15
+    index_code = 'hs300'
 
-    # fv = FundValue('s50')
-    # t = 2016
-    # fee = 0.1
-
-    # fv = FundValue('hsbonus')
-    # t = 2011
-    # fee = 0.12
-
-    fv = FundValue('bank')
-    t = 2016
-    fee = 0.1
-
-    # fv = FundValue('hs500')
-    # t = 2017
-    # fee = 0.12
-
-    # fv = FundValue('gem')
-    # t = 2018
-    # fee = 0.12
-
-    # fv = FundValue('hsxf')
-    # t = 2016
-    # fee = 0.1
-
-    # fv = FundValue('hswine')
-    # t = 2016
-    # fee = 0.1
-
-    # fv = FundValue('hshouse')
-    # t = 2014
-    # fee = 0.1
-
-    fv = FundValue('hkhs')
-    t = 2016
-    fee = 0.12
-
-    fv = FundValue('sz60')
-    t = 2012
-    fee = 0.15
-
-    # fv = FundValue('yy100')
-    # t = 2016
-    # fee = 0.1
-
+    fv = FundValue(index_code)
     fv.init_index_pbeinfo()
-    fid = fv.index_info['index_fids'][0]
+    fid = fv.index_info['index_fids'][0]['fid']
+    t = fv.index_info['index_fids'][0]['byear']
+    fee = fv.index_info['index_fids'][0]['fee']
     fv.init_f_info2(fid)
 
     for i in range(t, 2020):
