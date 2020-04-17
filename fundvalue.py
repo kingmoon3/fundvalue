@@ -222,8 +222,8 @@ class FundValue():
         # 加强 pe 的权重，越低越买
         return (w30/cur_pe) ** n
 
-    def get_weight_price(self, cur_price, wprice=1, n=4):
-        """ 获取 price 权重，默认以1做基准，实际采用前365天的平均价格。
+    def get_weight_price(self, cur_price, wprice, n=4):
+        """ 获取 price 权重，实际采用前365天的平均价格。
             超过该价格，则不买，否则多买。
         """
         if cur_price > wprice:
@@ -265,6 +265,8 @@ class FundValue():
 
         # 计算 pe 权重，由于 pe 无法预估，因此采用前一天的 pe 计算
         # 为更安全，pe 标准改用最近1年和最近2年的30水位线的最小值
+        # 若逢 2018 这种牛市，在下跌后，可加入最近5年的30水位线一起比较，避免牛市中申购太多。
+        # wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365), self.get_nwater(dt, 30, 365*5))
         wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
         cur_pe = self.pbeinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, wpe, n_pe)
