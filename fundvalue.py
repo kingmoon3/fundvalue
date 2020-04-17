@@ -30,7 +30,7 @@ class FundValue():
                 'index_fids': [{'fid': '001548', 'fee': 0.1, 'byear': 2016 }, ]},
             'zzbonus': {
                 'index_code': 'SH000922', 'index_name': u'中证红利', 'index_vq': 'pe',
-                'index_fids': [{'fid': '100032', 'fee': 0.15, 'byear': 2010 }, ]},
+                'index_fids': [{'fid': '100032', 'fee': 0.15, 'byear': 2011 }, ]},
             'gem': {
                 'index_code': 'SZ399006', 'index_name': u'创业板', 'index_vq': 'pe',
                 'index_fids': [{'fid': '003765', 'fee': 0.12, 'byear': 2018 }, ]},
@@ -267,6 +267,7 @@ class FundValue():
         # 为更安全，pe 标准改用最近1年和最近2年的30水位线的最小值
         # 若逢 2018 这种牛市，在下跌后，可加入最近5年的30水位线一起比较，避免牛市中申购太多。
         # wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365), self.get_nwater(dt, 30, 365*5))
+        # wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
         wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
         cur_pe = self.pbeinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, wpe, n_pe)
@@ -312,7 +313,8 @@ class FundValue():
         win = 0 if b_capital == 0 else (
             b_amount*fprice-b_capital-b_capital*fee/100) * 100 / b_capital
         win = str(round(win, 2)) + '%'
-        return (round(b_capital, 2), round(b_amount, 2), maxg, win)
+        avg_price = 0 if b_amount == 0 else (b_capital/b_amount)
+        return (round(b_capital, 2), round(b_amount, 2), maxg, win, round(avg_price, 4), fprice)
 
     def bs_fixed(self, fid, dt, bscapital):
         for i in range(10):
@@ -430,7 +432,7 @@ if __name__ == '__main__':
     fv.init_f_info2(fid)
 
     for i in range(t, 2020):
-        j = i+1
+        j = i + 1
         print(i)
         bd = datetime.datetime(i, 1, 1)
         ed = datetime.datetime(j, 1, 1)
