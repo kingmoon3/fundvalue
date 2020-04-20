@@ -66,8 +66,9 @@ def get_value(fv):
     delta_price = fv.get_delta_price(fid)
     result['gz_price'] = [gz_price, round(gz_price+delta_price, 4)]
     (capital, amount) = fv.buy_1day(fid, base=base)
-    cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
-    os.system(cmd)
+    if capital > 0:
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
+        os.system(cmd)
     result['capital'] = capital
     return result
 
