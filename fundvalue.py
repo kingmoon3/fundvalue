@@ -264,14 +264,14 @@ class FundValue():
             cur_price = self.f_info[fid].get(dt)[1]
 
         # 计算 pe 权重，由于 pe 无法预估，因此采用前一天的 pe 计算
-        # 为更安全，pe 标准改用最近1年和最近2年的30水位线的最小值
+        # 为更安全，pe 标准改用最近1年，2年，5年的30水位线的最小值
         # 若逢 2018 这种牛市，在下跌后，可加入最近5年的30水位线一起比较，避免牛市中申购太多。
-        # wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365), self.get_nwater(dt, 30, 365*5))
-        # wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
-        wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365))
+        wpe = min(self.get_nwater(dt, 30), self.get_nwater(dt, 30, 365), self.get_nwater(dt, 30, 365*5))
         cur_pe = self.pbeinfo.get(self.get_yesterday(dt))
         weight_pe = self.get_weight_pe(cur_pe, wpe, n_pe)
 
+        # 为更安全，price 标准改用最近1年，2年的均值的最小值即可，时间过长，可能无法申购。
+        # wprice = min(self.get_avg_price(fid, dt)[1], self.get_avg_price(fid, dt, 50, 365*2)[1])
         wprice = self.get_avg_price(fid, dt)[1]
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
 
