@@ -43,6 +43,9 @@ class FundValue():
             'zzhouse': {
                 'index_code': 'SZ399393', 'index_name': u'国证地产', 'index_vq': 'pb',
                 'index_fids': [{'fid': '160218', 'fee': 0.1, 'byear': 2014 }, ]},
+            'zzzq': {
+                'index_code': 'SZ399975', 'index_name': u'全指证券', 'index_vq': 'pb',
+                'index_fids': [{'fid': '160633', 'fee': 0.12, 'byear': 2016 }, ]},
             'zzxf': {
                 'index_code': 'SH000932', 'index_name': u'主要消费', 'index_vq': 'pe',
                 'index_fids': [{'fid': '000248', 'fee': 0.1, 'byear': 2016 }, ]},
@@ -396,7 +399,7 @@ class FundValue():
                 dt = dt + datetime.timedelta(days=1)
                 continue
             res = self.buy_1day(fid, dt, n_pe, n_price, base)
-            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.05:
+            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.1:
                 earn_capital = earn_capital + self.f_info[fid].get(dt)[1]*b_amount
                 print(('sold', dt, b_amount, earn_capital))
                 b_amount = 0
