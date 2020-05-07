@@ -43,6 +43,9 @@ class FundValue():
             'zzhouse': {
                 'index_code': 'SZ399393', 'index_name': u'国证地产', 'index_vq': 'pb',
                 'index_fids': [{'fid': '160218', 'fee': 0.1, 'byear': 2014 }, ]},
+            'zzzq': {
+                'index_code': 'SZ399975', 'index_name': u'全指证券', 'index_vq': 'pb',
+                'index_fids': [{'fid': '160633', 'fee': 0.12, 'byear': 2016 }, ]},
             'zzxf': {
                 'index_code': 'SH000932', 'index_name': u'主要消费', 'index_vq': 'pe',
                 'index_fids': [{'fid': '000248', 'fee': 0.1, 'byear': 2016 }, ]},
@@ -58,6 +61,9 @@ class FundValue():
             'yy100': {
                 'index_code': 'SH000978', 'index_name': u'医药100', 'index_vq': 'pe',
                 'index_fids': [{'fid': '001550', 'fee': 0.1, 'byear': 2016 }, ]},
+            '300value': {
+                'index_code': 'SH000919', 'index_name': u'300价值', 'index_vq': 'pe',
+                'index_fids': [{'fid': '310398', 'fee': 0.12, 'byear': 2011 }, ]},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -396,7 +402,7 @@ class FundValue():
                 dt = dt + datetime.timedelta(days=1)
                 continue
             res = self.buy_1day(fid, dt, n_pe, n_price, base)
-            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.05:
+            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.1:
                 earn_capital = earn_capital + self.f_info[fid].get(dt)[1]*b_amount
                 print(('sold', dt, b_amount, earn_capital))
                 b_amount = 0
@@ -431,14 +437,15 @@ if __name__ == '__main__':
     fee = fv.index_info['index_fids'][0]['fee']
     fv.init_f_info2(fid)
 
-    for i in range(t, 2020):
+    end_year = 2020
+    for i in range(t, end_year):
         j = i + 1
         print(i)
         bd = datetime.datetime(i, 1, 1)
         ed = datetime.datetime(j, 1, 1)
         print(fv.buy_longtime(fid, bd, ed, 2, 4))
     bd = datetime.datetime(t, 1, 1)
-    ed = datetime.datetime(2020, 1, 1)
+    ed = datetime.datetime(end_year, 1, 1)
     print(fv.buy_longtime(fid, bd, ed, 2, 4, fee))
     print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
     # print(fv.bs_longtime2(fid, bd, ed, 2, 4, fee))
