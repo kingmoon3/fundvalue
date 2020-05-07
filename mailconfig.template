@@ -1,0 +1,4 @@
+smtphost = 'smtp.mail.com'
+userfrom = 'smtp-auth@mail.com'
+userpassword = 'smtp-password'
+userto = ['user1@mail.com', 'user2@mail.com']
