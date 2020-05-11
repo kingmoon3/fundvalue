@@ -64,6 +64,9 @@ class FundValue():
             '300value': {
                 'index_code': 'SH000919', 'index_name': u'300价值', 'index_vq': 'pe',
                 'index_fids': [{'fid': '310398', 'fee': 0.12, 'byear': 2011 }, ]},
+            'zz100': {
+                'index_code': 'SH000903', 'index_name': u'中证100', 'index_vq': 'pe',
+                'index_fids': [{'fid': '213010', 'fee': 0.12, 'byear': 2011 }, ]},
         }
         self.pbeinfo = {}
         self.f_info = {}
@@ -429,6 +432,7 @@ class FundValue():
 if __name__ == '__main__':
 
     index_code = 'hs300'
+    index_code = 'sz60'
 
     fv = FundValue(index_code)
     fv.init_index_pbeinfo()
