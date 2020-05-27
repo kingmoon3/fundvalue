@@ -14,6 +14,7 @@ class FundValue():
         index_list: 字典，保存所有指数和对应基金的信息，key为助记符
         pbeinfo: 字典，保存指数的历史pe/pb，{datetime: pe}
         f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}
+        hist_info: 字典，保存基金的历史购买时间，{fid:[]}
         fid 为基金编码，nav为基金净值，nav2为累计净值。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
         index_info: 字典，根据 index_key 获取指定指数和对应基金的基础信息。
@@ -67,11 +68,15 @@ class FundValue():
             'zz100': {
                 'index_code': 'SH000903', 'index_name': u'中证100', 'index_vq': 'pe',
                 'index_fids': [{'fid': '213010', 'fee': 0.12, 'byear': 2011 }, ]},
+            'base50': {
+                'index_code': 'SH000925', 'index_name': u'基本面50', 'index_vq': 'pe',
+                'index_fids': [{'fid': '160716', 'fee': 0.12, 'byear': 2011 }, ]},
         }
         self.pbeinfo = {}
         self.f_info = {}
         self.trade_days = {}
         self.index_info = index_list[index_key]
+        self.hist_info = {self.index_info['index_fids'][0]['fid']: []}
 
     def init_index_pbeinfo(self, time='all'):
         """ 获取pe/pb的通用接口，time可以为1y, 3y """
@@ -97,6 +102,20 @@ class FundValue():
         else:
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
+
+    def init_hist_info(self, fid, filename='/root/buy_fund_log.csv'):
+        try:
+            with open(filename, 'r') as f:
+                data = f.readlines()
+        except Exception as e:
+            self.hist_info[fid] = []
+            return False
+        for l in data:
+            hinfo = l.strip().split(',')
+            b_date = datetime.datetime.strptime(hinfo[0], '%Y-%m-%d')
+            fid = hinfo[1]
+            self.hist_info[fid].append(b_date)
+        self.hist_info[fid].sort(reverse=True)
 
     def init_f_info(self, fid):
         """ 获取指定基金的价格，只能获取当前净值 """
@@ -284,13 +303,24 @@ class FundValue():
         wprice = self.get_avg_price(fid, dt)[1]
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
 
+        # 加入历史回溯，如当日净值低于最近30个申购日的净值则加权购买，回测显示意义不大。
+        # hist_price = []
+        # weight_hist = 1
+        # for i in self.hist_info[fid]:
+        #     if i < dt:
+        #         hist_price.append(self.f_info[fid].get(i)[1])
+        # if len(hist_price) > 30:
+        #     avg_price = sum(hist_price[0:30])/len(hist_price[0:30])
+        #     if avg_price - cur_price > 0.001:
+        #         # print((dt, cur_price, avg_price))
+        #         weight_hist = (avg_price/cur_price) ** 8
+        # weight = weight_pe * weight_price * weight_hist
+
         weight = weight_pe * weight_price
 
         capital = int(math.ceil(base*weight))
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        # if dt.year == 2018:
-        #    print(dt, weight, capital)
         return (capital, amount)
 
     def buy_longtime(
@@ -432,7 +462,6 @@ class FundValue():
 if __name__ == '__main__':
 
     index_code = 'hs300'
-    index_code = 'sz60'
 
     fv = FundValue(index_code)
     fv.init_index_pbeinfo()
@@ -440,6 +469,7 @@ if __name__ == '__main__':
     t = fv.index_info['index_fids'][0]['byear']
     fee = fv.index_info['index_fids'][0]['fee']
     fv.init_f_info2(fid)
+    # fv.init_hist_info(fid)
 
     end_year = 2020
     for i in range(t, end_year):
