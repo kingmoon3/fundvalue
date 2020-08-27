@@ -2,9 +2,11 @@
 
 import requests
 import datetime
+import time
 import json
 import re
 import math
+from bs4 import BeautifulSoup
 
 
 class FundValue():
@@ -171,6 +173,39 @@ class FundValue():
         for f in finfo:
             f['date'] = datetime.datetime.strptime(f['FSRQ'], '%Y-%m-%d')
             fdict.setdefault(f['date'], (float(f['DWJZ']), float(f['LJJZ'])))
+        self.f_info[fid] = fdict
+        if self.trade_days == {}:
+            self.trade_days = set(fdict.keys())
+        else:
+            self.trade_days = self.trade_days & set(fdict.keys())
+        return fdict
+
+    def init_f_info3(self, fid):
+        """ 采用另一个接口获取指定基金的价格，可以获取当前净值和累计净值 """
+        fdict = {}
+        url = 'http://fund.eastmoney.com/f10/F10DataApi.aspx'
+        params = {'type': 'lsjz', 'code': fid, 'page': 1, 'per': 20}
+        html = requests.get(url, params).text
+        soup = BeautifulSoup(html, 'html.parser')
+
+        pattern = re.compile(r'pages:(.*),')
+        result = re.search(pattern, html).group(1)
+        pages = int(result)
+        page = 1
+
+        while page <= pages:
+            time.sleep(0.5)
+            params = {'type': 'lsjz', 'code': fid, 'page': page, 'per': 20}
+            html = requests.get(url, params).text
+            soup = BeautifulSoup(html, 'html.parser')
+            for tr in soup.findAll('tbody')[0].findAll('tr'):
+                if tr.findAll('td') and len((tr.findAll('td'))) == 7:
+                    dt = str(tr.select('td:nth-of-type(1)')[0].getText().strip())
+                    dwjz = str(tr.select('td:nth-of-type(2)')[0].getText().strip())
+                    ljjz = str(tr.select('td:nth-of-type(3)')[0].getText().strip())
+                    fdate = datetime.datetime.strptime(dt, '%Y-%m-%d')
+                    fdict.setdefault(fdate, (float(dwjz), float(ljjz)))
+            page = page + 1
         self.f_info[fid] = fdict
         if self.trade_days == {}:
             self.trade_days = set(fdict.keys())
@@ -467,7 +502,7 @@ if __name__ == '__main__':
     fid = fv.index_info['index_fids'][0]['fid']
     t = fv.index_info['index_fids'][0]['byear']
     fee = fv.index_info['index_fids'][0]['fee']
-    fv.init_f_info2(fid)
+    fv.init_f_info3(fid)
     # fv.init_hist_info(fid)
 
     end_year = 2020
