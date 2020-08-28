@@ -41,9 +41,10 @@ class EastFund():
         header['Referer'] = 'http://fundf10.eastmoney.com/jjjz_' + fid + '.html'
         res = requests.get(url=url, headers=header)
         total_number = self.parse_jsonp(res)['TotalCount']
-        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&'
-        url += 'pageSize={}&startDate={}&endDate={}&fundCode={}'.format(str(total_number), sdate, edate, fid)
-        res = requests.get(url=url, headers=header)
+        if total_number > 20:
+            url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery&pageIndex=1&'
+            url += 'pageSize={}&startDate={}&endDate={}&fundCode={}'.format(str(total_number), sdate, edate, fid)
+            res = requests.get(url=url, headers=header)
         finfo = self.parse_jsonp(res)['Data']['LSJZList']
         for f in finfo:
             result.append((fid, f['FSRQ'], float(f['DWJZ']), float(f['LJJZ'])))
