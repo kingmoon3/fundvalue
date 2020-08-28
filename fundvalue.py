@@ -502,7 +502,7 @@ if __name__ == '__main__':
     fid = fv.index_info['index_fids'][0]['fid']
     t = fv.index_info['index_fids'][0]['byear']
     fee = fv.index_info['index_fids'][0]['fee']
-    fv.init_f_info3(fid)
+    fv.init_f_info2(fid)
     # fv.init_hist_info(fid)
 
     end_year = 2020
