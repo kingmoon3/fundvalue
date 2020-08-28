@@ -7,6 +7,7 @@ import json
 import re
 import math
 from bs4 import BeautifulSoup
+from eastfund import EastFund
 
 
 class FundValue():
@@ -16,10 +17,10 @@ class FundValue():
         index_list: 字典，保存所有指数和对应基金的信息，key为助记符
         pbeinfo: 字典，保存指数的历史pe/pb，{datetime: pe}
         f_info: 字典, 保存基金的历史价格，{fid: {datetime: (nav, nav2)}}
-        hist_info: 字典，保存基金的历史购买时间，{fid:[]}
         fid 为基金编码，nav为基金净值，nav2为累计净值。
         trade_days: 所有交易日的集合，各个基金可能不同，每计算一个基金则需要取一次交集。
         index_info: 字典，根据 index_key 获取指定指数和对应基金的基础信息。
+        efund: 对象，根据 fid 和东方财富 api 获取信息。
     """
 
     def __init__(self, index_key):
@@ -78,7 +79,8 @@ class FundValue():
         self.f_info = {}
         self.trade_days = {}
         self.index_info = index_list[index_key]
-        self.hist_info = {self.index_info['index_fids'][0]['fid']: []}
+        self.fid = self.index_info['index_fids'][0]['fid']
+        self.efund = EastFund(self.fid)
 
     def init_index_pbeinfo(self, time='all'):
         """ 获取pe/pb的通用接口，time可以为1y, 3y """
@@ -105,131 +107,16 @@ class FundValue():
             self.trade_days = self.trade_days & set(pedict.keys())
         return pedict
 
-    def init_hist_info(self, fid, filename='/root/buy_fund_log.csv'):
-        try:
-            with open(filename, 'r') as f:
-                data = f.readlines()
-        except Exception as e:
-            self.hist_info[fid] = []
-            return False
-        for l in data:
-            hinfo = l.strip().split(',')
-            b_date = datetime.datetime.strptime(hinfo[0], '%Y-%m-%d')
-            fid = hinfo[1]
-            self.hist_info[fid].append(b_date)
-        self.hist_info[fid].sort(reverse=True)
-
-    def init_f_info(self, fid):
-        """ 获取指定基金的价格，只能获取当前净值 """
-        fdict = {}
-        header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-            AppleWebKit/537.36 (KHTML, like Gecko) \
-            Chrome/79.0.3945.130 Safari/537.36'
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/'\
-            + str(fid) + '?page=1&size=10'
-        res = requests.get(url=url, headers=header)
-        total_item_number = json.loads(res.content)['data']['total_items']
-        url = 'https://danjuanapp.com/djapi/fund/nav/history/'\
-            + str(fid) + '?page=1&size=' + str(total_item_number)
-        res = requests.get(url=url, headers=header)
-        finfo = json.loads(res.content)['data']['items']
-        for f in finfo:
-            f['date'] = datetime.datetime.strptime(f['date'], '%Y-%m-%d')
-            # 无法取得累计净值，以当前净值代替。
-            fdict.setdefault(f['date'], (float(f['nav']), float(f['nav'])))
-        self.f_info[fid] = fdict
-        if self.trade_days == {}:
-            self.trade_days = set(fdict.keys())
-        else:
-            self.trade_days = self.trade_days & set(fdict.keys())
-        return fdict
-
-    def parse_jsonp(self, response):
-        return json.loads(
-            re.match(
-                r'[^(]*[(]({.*})[)][^)]*',
-                response.content.decode('utf-8'),
-                re.S).group(1))
-
-    def init_f_info2(self, fid):
+    def init_f_info(self):
         """ 获取指定基金的价格，可以获取当前净值和累计净值 """
-        fdict = {}
-        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery\
-            &pageIndex=1&pageSize=20&startDate=&endDate=&fundCode=' + fid
-        header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-            AppleWebKit/537.36 (KHTML, like Gecko) \
-            Chrome/79.0.3945.130 Safari/537.36'
-        header['Referer'] = 'http://fundf10.eastmoney.com/jjjz_'\
-            + fid + '.html'
-        res = requests.get(url=url, headers=header)
-        total_item_number = self.parse_jsonp(res)['TotalCount']
-        url = 'http://api.fund.eastmoney.com/f10/lsjz?callback=jQuery\
-            &pageIndex=1&pageSize=' + str(total_item_number)\
-            + '&startDate=&endDate=&fundCode=' + fid
-        res = requests.get(url=url, headers=header)
-        finfo = self.parse_jsonp(res)['Data']['LSJZList']
-        for f in finfo:
-            f['date'] = datetime.datetime.strptime(f['FSRQ'], '%Y-%m-%d')
-            fdict.setdefault(f['date'], (float(f['DWJZ']), float(f['LJJZ'])))
+        fid = self.fid
+        fdict = self.efund.load_fundprice()
         self.f_info[fid] = fdict
         if self.trade_days == {}:
             self.trade_days = set(fdict.keys())
         else:
             self.trade_days = self.trade_days & set(fdict.keys())
         return fdict
-
-    def init_f_info3(self, fid):
-        """ 采用另一个接口获取指定基金的价格，可以获取当前净值和累计净值 """
-        fdict = {}
-        url = 'http://fund.eastmoney.com/f10/F10DataApi.aspx'
-        params = {'type': 'lsjz', 'code': fid, 'page': 1, 'per': 20}
-        html = requests.get(url, params).text
-        soup = BeautifulSoup(html, 'html.parser')
-
-        pattern = re.compile(r'pages:(.*),')
-        result = re.search(pattern, html).group(1)
-        pages = int(result)
-        page = 1
-
-        while page <= pages:
-            time.sleep(0.5)
-            params = {'type': 'lsjz', 'code': fid, 'page': page, 'per': 20}
-            html = requests.get(url, params).text
-            soup = BeautifulSoup(html, 'html.parser')
-            for tr in soup.findAll('tbody')[0].findAll('tr'):
-                if tr.findAll('td') and len((tr.findAll('td'))) == 7:
-                    dt = str(tr.select('td:nth-of-type(1)')[0].getText().strip())
-                    dwjz = str(tr.select('td:nth-of-type(2)')[0].getText().strip())
-                    ljjz = str(tr.select('td:nth-of-type(3)')[0].getText().strip())
-                    fdate = datetime.datetime.strptime(dt, '%Y-%m-%d')
-                    fdict.setdefault(fdate, (float(dwjz), float(ljjz)))
-            page = page + 1
-        self.f_info[fid] = fdict
-        if self.trade_days == {}:
-            self.trade_days = set(fdict.keys())
-        else:
-            self.trade_days = self.trade_days & set(fdict.keys())
-        return fdict
-
-    def get_gz(self, fid):
-        """ 获取当前时间的估值 """
-        url = 'http://fundgz.1234567.com.cn/js/' + fid + '.js'
-        header = {}
-        header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-            AppleWebKit/537.36 (KHTML, like Gecko) \
-            Chrome/79.0.3945.130 Safari/537.36'
-        try:
-            res = requests.get(url=url, headers=header)
-            gz_dict = self.parse_jsonp(res)
-            dnow = datetime.datetime.now().strftime('%Y-%m-%d')
-            if dnow != gz_dict['gztime'].split(' ')[0]:
-                return -1
-            return float(gz_dict['gsz'])
-        except Exception as e:
-            print(e)
-            return -1
 
     def get_yesterday(self, dt):
         """ 获取指定日期的前一个交易日 """
@@ -250,9 +137,10 @@ class FundValue():
         index = len(pe_value)*n//100-1
         return pe_value[index]
 
-    def get_avg_price(self, fid, end_date, n=50, day=365):
+    def get_avg_price(self, end_date, n=50, day=365):
         """ 获取 price 均值。
         """
+        fid = self.fid
         total = [0, 0]
         dwjz = []
         ljjz = []
@@ -293,17 +181,11 @@ class FundValue():
         # 加强 price 的权重，越低越买
         return (wprice/cur_price) ** n
 
-    def get_delta_price(self, fid, dt=None):
-        if dt is None:
-            dt = datetime.datetime.now()
-        delta_price = self.f_info[fid].get(self.get_yesterday(dt))
-        delta_price = delta_price[1] - delta_price[0]
-        return delta_price
-
-    def buy_1day(self, fid, bdt=None, n_pe=2, n_price=4, base=100):
+    def buy_1day(self, bdt=None, n_pe=2, n_price=4, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
+        fid = self.fid
         if len(self.trade_days) < 650:
             return (-1, -1)
         dt = bdt
@@ -314,12 +196,10 @@ class FundValue():
         if dt is None:
             dt = datetime.datetime.combine(
                 datetime.date.today(), datetime.datetime.min.time())
-            real_price = self.get_gz(fid)
+            (real_price, cur_price) = self.efund.get_gz()
             # 如果取估值有问题，可能是假日，不申购。
             if real_price < 0:
                 return (0, 0)
-            delta_price = self.get_delta_price(fid)
-            cur_price = real_price + delta_price
         # 否则采用当天的净值来计算
         else:
             real_price = self.f_info[fid].get(dt)[0]
@@ -334,21 +214,8 @@ class FundValue():
 
         # 为更安全，price 标准采用最近1年的均值，时间过长，可能无法申购。也可以考虑采用最近1年，2年均值的最小值。
         # wprice = min(self.get_avg_price(fid, dt)[1], self.get_avg_price(fid, dt, 50, 365*2)[1])
-        wprice = self.get_avg_price(fid, dt)[1]
+        wprice = self.get_avg_price(dt)[1]
         weight_price = self.get_weight_price(cur_price, wprice, n_price)
-
-        # 加入历史回溯，如当日净值低于最近30个申购日的净值则加权购买，回测显示意义不大。
-        # hist_price = []
-        # weight_hist = 1
-        # for i in self.hist_info[fid]:
-        #     if i < dt:
-        #         hist_price.append(self.f_info[fid].get(i)[1])
-        # if len(hist_price) > 30:
-        #     avg_price = sum(hist_price[0:30])/len(hist_price[0:30])
-        #     if avg_price - cur_price > 0.001:
-        #         # print((dt, cur_price, avg_price))
-        #         weight_hist = (avg_price/cur_price) ** 8
-        # weight = weight_pe * weight_price * weight_hist
 
         weight = weight_pe * weight_price
 
@@ -358,11 +225,12 @@ class FundValue():
         return (capital, amount)
 
     def buy_longtime(
-            self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100
+            self, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100
             ):
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
             fee=申购费率*100，在实测中基本可以忽略费率对收益的影响。
         """
+        fid = self.fid
         days = (end_date - begin_date).days
         b_capital = 0
         b_amount = 0
@@ -373,7 +241,7 @@ class FundValue():
             dt = dt + datetime.timedelta(days=1)
             if dt not in self.trade_days:
                 continue
-            res = self.buy_1day(fid, dt, n_pe, n_price, base)
+            res = self.buy_1day(dt, n_pe, n_price, base)
             b_capital = b_capital + res[0]
             b_amount = b_amount + res[1]
             fprice = float(self.f_info[fid].get(dt)[1])
@@ -389,109 +257,6 @@ class FundValue():
         avg_price = 0 if b_amount == 0 else (b_capital/b_amount)
         return (round(b_capital, 2), round(b_amount, 2), maxg, win, round(avg_price, 4), fprice)
 
-    def bs_fixed(self, fid, dt, bscapital):
-        for i in range(10):
-            dt = dt + datetime.timedelta(days=i)
-            if dt in self.trade_days:
-                fprice = float(self.f_info[fid].get(dt)[1])
-                amount = round(bscapital/fprice, 2)
-                return amount
-
-    def rebalance(self, fprice, nprice, hold_amount, hold_capital, ratio):
-        total_value = fprice*hold_amount+hold_capital
-        cpratio = fprice*hold_amount/total_value
-        bratio = 0.10
-        sratio = 0.10
-        if cpratio < (ratio*(1-bratio))/((ratio*(1-bratio))+(1-ratio)):
-            b_capital = total_value*ratio - fprice*hold_amount
-            b_capital = round(min(b_capital, hold_capital), 2)
-            b_amount = round(b_capital/nprice, 2)
-            return (b_capital, b_amount)
-        if cpratio > (ratio*(1+sratio))/((ratio*(1+sratio))+(1-ratio)):
-            s_capital = fprice*hold_amount - total_value*ratio
-            s_amount = s_capital/fprice
-            s_amount = round(min(s_amount, hold_amount), 2)
-            s_capital = round(nprice*s_amount, 2)
-            return (-s_capital, -s_amount)
-        return (0, 0)
-
-    def bs_longtime(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0):
-        """ 采用自动均衡机制，持仓和现金比例为1:1，盈利或亏损超过5%则调仓。
-        """
-        days = (end_date - begin_date).days
-        base = 10000
-        ratio = 0.8
-        dt = begin_date - datetime.timedelta(days=1)
-        hold_amount = self.bs_fixed(fid, begin_date, base*ratio)
-        hold_capital = round(base*(1-ratio), 2)
-        fee_cost = base*ratio*fee
-
-        for i in range(7, days):
-            dt = dt + datetime.timedelta(days=1)
-            if dt not in self.trade_days:
-                continue
-            fprice = float(self.f_info[fid].get(self.get_yesterday(dt))[1])
-            nprice = float(self.f_info[fid].get(dt)[1])
-            # bs_capital, amount>0 为买，bs_capital, amount<0 为卖。
-            (bs_capital, bs_amount) = self.rebalance(
-                fprice, nprice, hold_amount, hold_capital, ratio)
-            hold_capital = round(hold_capital - bs_capital, 2)
-            hold_amount = round(hold_amount + bs_amount, 2)
-            fee_cost = round(fee_cost + abs(bs_capital*fee/100), 2)
-            if int(bs_capital) != 0:
-                print((dt, bs_capital, bs_amount, hold_capital, hold_amount))
-        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
-        win = (hold_amount*fprice+hold_capital-base-fee_cost) * 100 / base
-        win = str(round(win, 2)) + '%'
-        return (
-            round(hold_capital, 2),
-            round(fprice*hold_amount, 2),
-            -fee_cost,
-            win)
-
-    def bs_longtime2(self, fid, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
-        """ 长期购买一段时间，用于测试。默认买100块钱。
-            超过盈利点则卖出，为增加盈利，会将当前已赎回的钱再次全部投入去申购基金。
-            回测 2011.1.1-2020.1.1 沪深300显示：
-                1. 一直不卖出，最终盈利 120%
-                2. 盈利 5% 卖出：操作14次，2014年盈利较方案1增加14%，错过2015-2018年的涨幅，最终盈利21.26%
-                3. 盈利 10% 卖出：操作6次，2014年盈利较方案1增加5%，错过2015-2018年的涨幅，最终盈利27%
-                4. 盈利 100% 卖出：操作2次，最终盈利107%
-        """
-        days = (end_date - begin_date).days
-        sum_capital = 0
-        earn_capital = 0
-        b_capital = 0
-        b_amount = 0
-        dt = begin_date
-        for i in range(days):
-            if dt not in self.trade_days:
-                dt = dt + datetime.timedelta(days=1)
-                continue
-            res = self.buy_1day(fid, dt, n_pe, n_price, base)
-            if int(res[0]) == 0 and self.f_info[fid].get(dt)[1]*b_amount > b_capital*1.1:
-                earn_capital = earn_capital + self.f_info[fid].get(dt)[1]*b_amount
-                print(('sold', dt, b_amount, earn_capital))
-                b_amount = 0
-                b_capital = 0
-            sum_capital = sum_capital + res[0]
-            b_capital = b_capital + res[0]
-            b_amount = b_amount + res[1]
-            # 将已赎回的钱再去申购
-            if int(res[0]) > 0 and earn_capital >0:
-                b_capital = b_capital + earn_capital
-                b_amount = b_amount + earn_capital/self.f_info[fid].get(dt)[1]
-                print(('buy', dt, b_amount, earn_capital, self.f_info[fid].get(dt)[1]))
-                earn_capital = 0
-            dt = dt + datetime.timedelta(days=1)
-        fprice = float(self.f_info[fid].get(self.get_yesterday(end_date))[1])
-        if sum_capital > 0:
-            win = (b_amount * fprice + earn_capital - sum_capital) * 100 / sum_capital
-        else:
-            win = 0
-        win = str(round(win, 2)) + '%'
-        return (round(sum_capital,2), round(b_amount, 2), round(earn_capital, 2), win)
-
 
 if __name__ == '__main__':
 
@@ -499,11 +264,9 @@ if __name__ == '__main__':
 
     fv = FundValue(index_code)
     fv.init_index_pbeinfo()
-    fid = fv.index_info['index_fids'][0]['fid']
     t = fv.index_info['index_fids'][0]['byear']
     fee = fv.index_info['index_fids'][0]['fee']
-    fv.init_f_info2(fid)
-    # fv.init_hist_info(fid)
+    fv.init_f_info()
 
     end_year = 2020
     for i in range(t, end_year):
@@ -511,9 +274,9 @@ if __name__ == '__main__':
         print(i)
         bd = datetime.datetime(i, 1, 1)
         ed = datetime.datetime(j, 1, 1)
-        print(fv.buy_longtime(fid, bd, ed, 2, 4))
+        print(fv.buy_longtime(bd, ed, 2, 4))
     bd = datetime.datetime(t, 1, 1)
     ed = datetime.datetime(end_year, 1, 1)
-    print(fv.buy_longtime(fid, bd, ed, 2, 4, fee))
-    print(fv.buy_1day(fid, n_pe=2, n_price=4, base=100))
+    print(fv.buy_longtime(bd, ed, 2, 4, fee))
+    print(fv.buy_1day(n_pe=2, n_price=4, base=100))
     # print(fv.bs_longtime2(fid, bd, ed, 2, 4, fee))

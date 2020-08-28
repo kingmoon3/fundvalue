@@ -114,3 +114,4 @@ dmypy.json
 /static/upload/
 /tags
 /mailconfig.py
+/record.*

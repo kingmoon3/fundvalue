@@ -50,22 +50,21 @@ def sendmail(receiver, subject, html, att=None, att_name=None):
 
 def get_value(fv):
     result = {}
-    fid = fv.index_info['index_fids'][0]['fid']
-    fv.init_f_info2(fid)
+    fid = fv.fid
+    fv.init_f_info()
     result['fid'] = fid
     result['index_name'] = fv.index_info['index_name']
     result['w30'] = fv.get_nwater(dt, 30)
     result['w50'] = fv.get_nwater(dt, 50)
     result['w70'] = fv.get_nwater(dt, 70)
     result['yday_pe'] = fv.pbeinfo.get(fv.get_yesterday(dt))
-    wprice = list(fv.get_avg_price(fid, dt))
+    wprice = list(fv.get_avg_price(dt))
     wprice[0] = round(wprice[0], 4)
     wprice[1] = round(wprice[1], 4)
     result['wprice'] = wprice
-    gz_price = fv.get_gz(fid)
-    delta_price = fv.get_delta_price(fid)
-    result['gz_price'] = [gz_price, round(gz_price+delta_price, 4)]
-    (capital, amount) = fv.buy_1day(fid, base=base)
+    gz_price = fv.efund.get_gz()
+    result['gz_price'] = [gz_price[0], round(gz_price[1], 4)]
+    (capital, amount) = fv.buy_1day(base=base)
     if capital > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
         os.system(cmd)
