@@ -50,19 +50,17 @@ def sendmail(receiver, subject, html, att=None, att_name=None):
 
 def get_value(fv):
     result = {}
-    fid = fv.fid
-    fv.init_f_info()
-    result['fid'] = fid
-    result['index_name'] = fv.index_info['index_name']
-    result['w30'] = fv.get_nwater(dt, 30)
-    result['w50'] = fv.get_nwater(dt, 50)
-    result['w70'] = fv.get_nwater(dt, 70)
-    result['yday_pe'] = fv.pbeinfo.get(fv.get_yesterday(dt))
-    wprice = list(fv.get_avg_price(dt))
+    result['fid'] = fv.fid
+    result['index_name'] = fv.index['name']
+    result['w30'] = fv.dj.get_pbe_nwater(dt, 30)
+    result['w50'] = fv.dj.get_pbe_nwater(dt, 50)
+    result['w70'] = fv.dj.get_pbe_nwater(dt, 70)
+    result['yday_pe'] = fv.index_pbe.get(fv.get_yesterday(dt))
+    wprice = list(fv.east.get_avg_price(dt))
     wprice[0] = round(wprice[0], 4)
     wprice[1] = round(wprice[1], 4)
     result['wprice'] = wprice
-    gz_price = fv.efund.get_gz()
+    gz_price = fv.east.get_gz()
     result['gz_price'] = [gz_price[0], round(gz_price[1], 4)]
     (capital, amount) = fv.buy_1day(base=base)
     if capital > 0:
@@ -100,7 +98,8 @@ content = ''
 
 for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine', 'zz500', 'sz60', 'yy100'):
     fv = FundValue(i)
-    fv.init_index_pbeinfo()
+    fv.init_index_pbe()
+    fv.init_fund_jz()
     res = get_value(fv)
     (sub, con) = create_email(res)
     subject += sub
