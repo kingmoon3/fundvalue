@@ -60,9 +60,8 @@ def get_value(fv):
     wprice[0] = round(wprice[0], 4)
     wprice[1] = round(wprice[1], 4)
     result['wprice'] = wprice
-    gz_price = fv.east.get_gz()
+    (capital, amount, gz_price) = fv.buy_1day(base=base)
     result['gz_price'] = [gz_price[0], round(gz_price[1], 4)]
-    (capital, amount) = fv.buy_1day(base=base)
     if capital > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
         os.system(cmd)

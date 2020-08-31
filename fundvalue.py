@@ -171,7 +171,7 @@ class FundValue():
         capital = int(math.ceil(base*weight))
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        return (capital, amount)
+        return (capital, amount, (real_price, cur_price))
 
     def buy_longtime(
             self, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100
