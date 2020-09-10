@@ -161,8 +161,7 @@ class EastFund():
             return (0, 0)
         # 如果当天购买，则采用实时最新估值。
         if dt is None:
-            dt = datetime.datetime.combine(
-                datetime.date.today(), datetime.datetime.min.time())
+            dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
             (real_price, cur_price) = self.get_gz()
             # 如果取估值有问题，可能是假日，不申购。
             if real_price < 0:
@@ -171,14 +170,14 @@ class EastFund():
         else:
             real_price = self.price_list.get(dt)[0]
             cur_price = self.price_list.get(dt)[1]
-        avg_price = self.get_avg_price(dt, 50, 60)[1]
-        if cur_price > avg_price:
+        avg_price = self.get_avg_price(dt, 50, 60)
+        if cur_price > avg_price[1]:
             return (0, 0, (0, 0))
-        capital = int(math.ceil((avg_price / cur_price) ** n * base))
+        capital = int(math.ceil((avg_price[1] / cur_price) ** n * base))
         # print(dt, capital)
         # 以累计净值计算购买数量，不准确。
         amount = round(capital/cur_price, 2)
-        return (capital, amount, (real_price, cur_price))
+        return (capital, amount, (real_price, cur_price), avg_price)
 
     def get_buylog_water(self, buy_log):
         """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
@@ -188,8 +187,24 @@ class EastFund():
         else:
             fprice = buy_log[-1]
             sorted_log = sorted(buy_log)
+            # print(sorted_log)
             weight = 1.0 * sorted_log.index(fprice) / len(sorted_log) + 1
             return weight
+
+    def get_buylog(self, end_date=None, days=365*5, n=80, base=100):
+        buy_log = []
+        if end_date is None:
+            end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) - datetime.timedelta(days=1)
+        begin_date = end_date - datetime.timedelta(days=days)
+        dt = begin_date
+        for i in range(days):
+            dt = dt + datetime.timedelta(days=1)
+            if dt not in self.price_list.keys():
+                continue
+            res = self.buy_1day(dt, n, base)
+            if int(res[0]) > 0:
+                buy_log.append(res[0])
+        return buy_log
 
     def buy_longtime(self, begin_date, end_date, n=80, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
@@ -205,12 +220,9 @@ class EastFund():
                 continue
             fprice = self.price_list[dt][1]
             res = self.buy_1day(dt, n)
-            if int(res[0]) > 0:
-                buy_log.append(res[0])
-                # 没啥用，似乎不设置水位线更好。
-                weight = self.get_buylog_water(buy_log)
-                b_capital = b_capital + res[0] * (weight ** 2)
-                b_amount = b_amount + res[1] * (weight ** 2)
+            buy_log.append(res[0])
+            b_capital = b_capital + res[0]
+            b_amount = b_amount + res[1]
         win = 0 if b_capital == 0 else (
             b_amount*fprice-b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
@@ -226,4 +238,8 @@ if __name__ == '__main__':
     begin_date = datetime.datetime(2015, 6, 30, 0, 0, 0)
     end_date = datetime.datetime(2020, 6, 30, 0, 0, 0)
     print(ef.buy_longtime(begin_date, end_date, 100))
-    print(ef.buy_1day())
+    today = ef.buy_1day()
+    buy_log = ef.get_buylog()
+    buy_log.append(today[0])
+    print(today)
+    print(ef.get_buylog_water(buy_log))
