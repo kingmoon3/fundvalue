@@ -119,7 +119,7 @@ subject1 = u'【基金申购】'
 subject = ''
 content = ''
 
-for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine', 'zz500', 'sz60', 'yy100', 'zzhouse'):
+for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine', 'zz500', 'sz60', 'yy100', 'zzyl', 'zzhouse'):
     fv = FundValue(i)
     fv.init_index_pbe()
     fv.init_fund_jz()

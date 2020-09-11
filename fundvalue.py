@@ -65,6 +65,9 @@ class FundValue():
             'yy100': {
                 'index': {'code': 'SH000978', 'name': u'医药100', 'vq': 'pe'},
                 'fund': {'fid': '001550', 'fee': 0.1, 'byear': 2016 }},
+            'zzyl': {
+                'index': {'code': 'SZ399989', 'name': u'中证医疗', 'vq': 'pe'},
+                'fund': {'fid': '162412', 'fee': 0.12, 'byear': 2016 }},
             '300value': {
                 'index': {'code': 'SH000919', 'name': u'300价值', 'vq': 'pe'},
                 'fund': {'fid': '310398', 'fee': 0.12, 'byear': 2011 }},
