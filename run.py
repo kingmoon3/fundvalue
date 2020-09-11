@@ -62,6 +62,13 @@ def get_value(fv):
     wprice[1] = round(wprice[1], 4)
     result['wprice'] = wprice
     (capital, amount, gz_price) = fv.buy_1day(base=base)
+    result['buy_water'] = 0
+    result['buy_water_length'] = 0
+    if capital > 0:
+        buy_log = fv.get_buylog()
+        buy_log.append(capital)
+        result['buy_water'] = round(fv.get_buylog_water(buy_log)[0], 4)
+        result['buy_water_length'] = fv.get_buylog_water(buy_log)[1]
     result['gz_price'] = [gz_price[0], round(gz_price[1], 4)]
     if capital > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
@@ -84,8 +91,9 @@ def create_email(values):
         <br />
         基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
+        该基金五年购买水位线为：{}，{} 次<br />
         <br />
-        '''.format(res['index_name'], res['yday_pe'], res['w30'], res['w50'], res['w70'], res['fid'], res['gz_price'][0], res['gz_price'][1], res['wprice'][0], res['wprice'][1])
+        '''.format(res['index_name'], res['yday_pe'], res['w30'], res['w50'], res['w70'], res['fid'], res['gz_price'][0], res['gz_price'][1], res['wprice'][0], res['wprice'][1], res['buy_water'], res['buy_water_length'])
     return (subject, content)
 
 def create_1fund_email(values):
@@ -98,9 +106,9 @@ def create_1fund_email(values):
         content = u'''<h4>{} 申购 {} 元</h4>'''.format(res['fid'], res['capital'])
     content = content + u'''基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
-        本次购买水位线为：{} <br />
+        该基金五年购买水位线为：{}，{} 次 <br />
         <br />
-        '''.format(res['fid'], round(res['gz_price'][0], 4), round(res['gz_price'][1], 4),round(res['wprice'][0], 4), round(res['wprice'][1], 4), round(res['water'], 4))
+        '''.format(res['fid'], round(res['gz_price'][0], 4), round(res['gz_price'][1], 4),round(res['wprice'][0], 4), round(res['wprice'][1], 4), round(res['water'], 4), res['water_length'])
     return (subject, content)
 
 
@@ -132,7 +140,8 @@ for i in ('000215',):
     res['amount'] = today[1]
     res['gz_price'] = today[2]
     res['wprice'] = today[3]
-    res['water'] = ef.get_buylog_water(buy_log)
+    res['water'] = ef.get_buylog_water(buy_log)[0]
+    res['water_length'] = ef.get_buylog_water(buy_log)[1]
     (sub, con) = create_1fund_email(res)
     subject += sub
     content += con

@@ -182,14 +182,14 @@ class EastFund():
     def get_buylog_water(self, buy_log):
         """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
         """
-        if len(buy_log) <= 150:
-            return 1
+        if len(buy_log) <= 50:
+            return (0, len(buy_log))
         else:
             fprice = buy_log[-1]
             sorted_log = sorted(buy_log)
             # print(sorted_log)
-            weight = 1.0 * sorted_log.index(fprice) / len(sorted_log) + 1
-            return weight
+            weight = 1.0 * sorted_log.index(fprice) / len(sorted_log)
+            return (weight, len(buy_log))
 
     def get_buylog(self, end_date=None, days=365*5, n=80, base=100):
         buy_log = []

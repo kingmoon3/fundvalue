@@ -129,6 +129,34 @@ class FundValue():
             return 0
         # 加强 price 的权重，越低越买
         return (wprice/cur_price) ** n
+ 
+    def get_buylog_water(self, buy_log):
+        """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
+        """
+        if len(buy_log) <= 50:
+            return (0, len(buy_log))
+        else:
+            fprice = buy_log[-1]
+            if fprice == 0:
+                return (0, len(buy_log)) 
+            sorted_log = sorted(buy_log)
+            weight = 1.0 * sorted_log.index(fprice) / len(sorted_log)
+            return (weight, len(buy_log))
+
+    def get_buylog(self, end_date=None, days=365*5, n_pe=2, n_price=4, base=100):
+        buy_log = []
+        if end_date is None:
+            end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) - datetime.timedelta(days=1)
+        begin_date = end_date - datetime.timedelta(days=days)
+        dt = begin_date
+        for i in range(days):
+            dt = dt + datetime.timedelta(days=1)
+            if dt not in self.trade_days:
+                continue
+            res = self.buy_1day(dt, n_pe, n_price, base)
+            if int(res[0]) > 0:
+                buy_log.append(res[0])
+        return buy_log
 
     def buy_1day(self, bdt=None, n_pe=2, n_price=4, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
@@ -143,8 +171,7 @@ class FundValue():
             return (0, 0)
         # 如果当天购买，则采用实时最新估值。
         if dt is None:
-            dt = datetime.datetime.combine(
-                datetime.date.today(), datetime.datetime.min.time())
+            dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
             (real_price, cur_price) = self.east.get_gz()
             # 如果取估值有问题，可能是假日，不申购。
             if real_price < 0:
@@ -173,9 +200,7 @@ class FundValue():
         amount = round(capital/cur_price, 2)
         return (capital, amount, (real_price, cur_price))
 
-    def buy_longtime(
-            self, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100
-            ):
+    def buy_longtime(self, begin_date, end_date, n_pe=2, n_price=4, fee=0, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
             fee=申购费率*100，在实测中基本可以忽略费率对收益的影响。
         """
