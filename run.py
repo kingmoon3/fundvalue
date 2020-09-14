@@ -128,7 +128,7 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
     subject += sub
     content += con
 
-for i in ('000215',):
+for i in ('000215', '519062'):
     res = {}
     res['fid'] = i
     ef = EastFund(i)

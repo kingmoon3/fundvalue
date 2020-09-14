@@ -232,6 +232,7 @@ class EastFund():
 if __name__ == '__main__':
 
     index_code = '000215'
+    # index_code = '519062'
 
     ef = EastFund(index_code)
     ef.load_fundprice()
