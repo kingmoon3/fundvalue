@@ -158,21 +158,21 @@ class EastFund():
         dt = bdt
         # 非今天申购，且非交易日，则不予购买。
         if dt is not None and dt not in self.price_list.keys():
-            return (0, 0)
+            return (0, 0, (0, 0), (0, 0))
         # 如果当天购买，则采用实时最新估值。
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
             (real_price, cur_price) = self.get_gz()
             # 如果取估值有问题，可能是假日，不申购。
             if real_price < 0:
-                return (0, 0)
+                return (0, 0, (0, 0), (0, 0))
         # 否则采用当天的净值来计算
         else:
             real_price = self.price_list.get(dt)[0]
             cur_price = self.price_list.get(dt)[1]
         avg_price = self.get_avg_price(dt, 50, 60)
         if cur_price > avg_price[1]:
-            return (0, 0, (0, 0))
+            return (0, 0, (real_price, cur_price), avg_price)
         capital = int(math.ceil((avg_price[1] / cur_price) ** n * base))
         # print(dt, capital)
         # 以累计净值计算购买数量，不准确。

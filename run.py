@@ -100,7 +100,7 @@ def create_1fund_email(values):
     res = values
     if int(res['capital']) == 0:
         subject = ''
-        content = u'''<h4> {} </h4>'''.format(res['index_name'])
+        content = u'''<h4> {} </h4>'''.format(res['fid'])
     else:
         subject = u' {} 申购 {} 元，'.format(res['fid'], res['capital'])
         content = u'''<h4>{} 申购 {} 元</h4>'''.format(res['fid'], res['capital'])
