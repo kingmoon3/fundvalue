@@ -71,7 +71,7 @@ def get_value(fv):
         result['buy_water_length'] = fv.get_buylog_water(buy_log)[1]
     result['gz_price'] = [gz_price[0], round(gz_price[1], 4)]
     if capital > 0:
-        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'),fid,capital)
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, capital)
         os.system(cmd)
     result['capital'] = capital
     return result
