@@ -89,7 +89,7 @@ class FundValue():
 
     def init_index_pbe(self, time='all'):
         """ 获取pe/pb的通用接口，time可以为1y, 3y """
-        self.index_pbe = self.dj.init_pbe()
+        self.index_pbe = self.dj.init_pbe(time)
         if self.trade_days == {}:
             self.trade_days = set(self.index_pbe.keys())
         else:
@@ -109,9 +109,9 @@ class FundValue():
         """ 获取指定日期的前一个交易日 """
         dt = datetime.datetime(dt.year, dt.month, dt.day, 0, 0, 0, 0)
         for i in range(1, 30):
-            dt = dt - datetime.timedelta(days=i)
-            if dt in self.trade_days:
-                return dt
+            bdt = dt - datetime.timedelta(days=i)
+            if bdt in self.trade_days:
+                return bdt
 
     def get_weight_pe(self, cur_pe, w30, n=2):
         """ 获取 pe 权重，以30水位线做基准，超过30水位线则不买。否则越低越买。
