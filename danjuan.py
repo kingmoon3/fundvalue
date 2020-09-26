@@ -37,6 +37,13 @@ class Danjuan():
         for pe in json.loads(res.content)['data'][pbe_name]:
             pe['ts'] = datetime.datetime.fromtimestamp(pe['ts'] // 1000)
             pedict.setdefault(pe['ts'], pe[self.index_vq])
+        min_tradeday = min(pedict.keys())
+        max_tradeday = max(pedict.keys())
+        for i in range((max_tradeday - min_tradeday).days):
+            d = min_tradeday + datetime.timedelta(days=i)
+            if d not in pedict.keys():
+                yesterday = d - datetime.timedelta(days=1)
+                pedict[d] = pedict[yesterday]
         self.pbe = pedict
         return pedict
 

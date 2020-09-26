@@ -115,3 +115,4 @@ dmypy.json
 /tags
 /mailconfig.py
 /record.*
+/buylog.*
