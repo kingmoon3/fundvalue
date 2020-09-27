@@ -112,7 +112,7 @@ class FundValue():
         """
         if n < 0:
             return 1
-        if cur_pe > w30:
+        if cur_pe > w30 or cur_pe <= 0:
             return 0
         # 加强 pe 的权重，越低越买
         return (w30/cur_pe) ** n
@@ -121,7 +121,7 @@ class FundValue():
         """ 获取 price 权重，实际采用前365天的平均价格。
             超过该价格，则不买，否则多买。
         """
-        if cur_price > wprice:
+        if cur_price > wprice or cur_price <= 0:
             return 0
         # 加强 price 的权重，越低越买
         return (wprice/cur_price) ** n
@@ -277,7 +277,10 @@ class FundValue():
         res['pe50'] = self.dj.get_pbe_nwater(dt, 50, 365*5)
         res['pe70'] = self.dj.get_pbe_nwater(dt, 70, 365*5)
         res['pe90'] = self.dj.get_pbe_nwater(dt, 90, 365*5)
-        res['pe'] = self.index_pbe.get(dt - datetime.timedelta(days=1))
+        for i in range(30):
+            res['pe'] = self.index_pbe.get(dt - datetime.timedelta(days=i), -1)
+            if res['pe'] > 0:
+                break
         weight_pe = self.get_weight_pe(res['pe'], res['pe30'], n_pe)
 
         # 为更安全，price 标准采用最近1年的均值，时间过长，可能无法申购。也可以考虑采用最近1年，2年均值的最小值。
@@ -289,9 +292,12 @@ class FundValue():
 
         res['capital'] = int(math.ceil(base*weight))
         # 以累计净值计算购买数量，不准确。
-        res['amount'] = round(res['capital'] / cur_price, 2)
-        # 如果非今天购买，则保留购买记录，方便回测
+        res['amount'] = 0
+        if cur_price > 0:
+            res['amount'] = round(res['capital'] / cur_price, 2)
         del(res['is_today'])
+        res['price'] = list(res['price'])
+        res['avg_price'] = list(res['avg_price'])
         res['price'][0] = round(res['price'][0], 4)
         res['price'][1] = round(res['price'][1], 4)
         res['avg_price'][0] = round(res['avg_price'][0], 4)

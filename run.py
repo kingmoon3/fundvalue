@@ -63,11 +63,15 @@ def get_value(fv, base):
     (capital, amount) = (res1day['capital'], res1day['amount'])
     result['buy_water'] = 0
     result['buy_water_length'] = 0
-    if capital > 0:
-        buylist = fv.get_buylog()
-        buylist.append(capital)
-        result['buy_water'] = fv.get_buylog_water(buylist)[0]
-        result['buy_water_length'] = fv.get_buylog_water(buylist)[1]
+    # if capital > 0:
+    #     buylist = fv.get_buylog()
+    #     buylist.append(capital)
+    #     result['buy_water'] = fv.get_buylog_water(buylist)[0]
+    #     result['buy_water_length'] = fv.get_buylog_water(buylist)[1]
+    buylist = fv.get_buylog()
+    buylist.append(capital)
+    result['buy_water'] = fv.get_buylog_water(buylist)[0]
+    result['buy_water_length'] = fv.get_buylog_water(buylist)[1]
     result['gz_price'] = res1day['price']
     if capital > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, capital)

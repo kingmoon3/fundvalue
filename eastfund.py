@@ -122,11 +122,11 @@ class EastFund():
             gz_dict = self.parse_jsonp(res)
             dnow = datetime.datetime.now().strftime('%Y-%m-%d')
             if dnow != gz_dict['gztime'].split(' ')[0]:
-                return (-1, -1)
+                return (0, 0)
             return (float(gz_dict['gsz']), float(gz_dict['gsz']) + delta_price)
         except Exception as e:
             print(e)
-            return (-1, -1)
+            return (0, 0)
 
     def get_avg_price(self, end_date, n=50, day=365):
         """ 获取1年的均值。
@@ -173,10 +173,14 @@ class EastFund():
         avg_price = self.get_avg_price(dt, 50, 60)
         if cur_price > avg_price[1]:
             return (0, 0, (real_price, cur_price), avg_price)
-        capital = int(math.ceil((avg_price[1] / cur_price) ** n * base))
-        # print(dt, capital)
-        # 以累计净值计算购买数量，不准确。
-        amount = round(capital/cur_price, 2)
+        if cur_price > 0:
+            capital = int(math.ceil((avg_price[1] / cur_price) ** n * base))
+            # print(dt, capital)
+            # 以累计净值计算购买数量，不准确。
+            amount = round(capital/cur_price, 2)
+        else:
+            capital = 0
+            amount = 0
         return (capital, amount, (real_price, cur_price), avg_price)
 
     def get_buylog_water(self, buy_log):
