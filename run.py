@@ -49,36 +49,6 @@ def sendmail(receiver, subject, html, att=None, att_name=None):
         logging.error(u"邮件发送失败，请检查邮件配置:{}".format(ex))
         return False
 
-def get_value(fv, base):
-    result = {}
-    res1day = fv.buy_1day(base=base)
-    result['fid'] = res1day['fid']
-    result['index_name'] = res1day['index_name']
-    result['w30'] = res1day['pe30']
-    result['w50'] = res1day['pe50']
-    result['w70'] = res1day['pe70']
-    result['w90'] = res1day['pe90']
-    result['yday_pe'] = res1day['pe']
-    result['wprice'] = res1day['avg_price']
-    (capital, amount) = (res1day['capital'], res1day['amount'])
-    result['buy_water'] = 0
-    result['buy_water_length'] = 0
-    # if capital > 0:
-    #     buylist = fv.get_buylog()
-    #     buylist.append(capital)
-    #     result['buy_water'] = fv.get_buylog_water(buylist)[0]
-    #     result['buy_water_length'] = fv.get_buylog_water(buylist)[1]
-    buylist = fv.get_buylog()
-    buylist.append(capital)
-    result['buy_water'] = fv.get_buylog_water(buylist)[0]
-    result['buy_water_length'] = fv.get_buylog_water(buylist)[1]
-    result['gz_price'] = res1day['price']
-    if capital > 0:
-        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, capital)
-        os.system(cmd)
-    result['capital'] = capital
-    return result
-
 def create_email(values):
     res = values
     if int(res['capital']) == 0:
@@ -97,7 +67,9 @@ def create_email(values):
         该基金的年度平均净值为：{}，{} <br />
         该基金五年购买水位线为：{}，{} 次<br />
         <br />
-        '''.format(res['index_name'], res['yday_pe'], res['w30'], res['w50'], res['w70'], res['w90'], res['fid'], res['gz_price'][0], res['gz_price'][1], res['wprice'][0], res['wprice'][1], res['buy_water'], res['buy_water_length'])
+        '''.format(res['index_name'], res['pe'], res['pe30'], res['pe50'], res['pe70'],
+            res['pe90'], res['fid'], res['price'][0], res['price'][1], res['avg_price'][0],
+            res['avg_price'][1], res['buy_water'][0], res['buy_water'][1])
     return (subject, content)
 
 def create_1fund_email(values):
@@ -112,7 +84,9 @@ def create_1fund_email(values):
         该基金的年度平均净值为：{}，{} <br />
         该基金五年购买水位线为：{}，{} 次 <br />
         <br />
-        '''.format(res['fid'], round(res['gz_price'][0], 4), round(res['gz_price'][1], 4),round(res['wprice'][0], 4), round(res['wprice'][1], 4), round(res['water'], 4), res['water_length'])
+        '''.format(res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
+            round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
+            round(res['buy_water'][0], 4), res['buy_water'][1])
     return (subject, content)
 
 
@@ -127,26 +101,26 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
     fv = FundValue(i)
     fv.init_index_pbe()
     fv.init_fund_jz()
-    res = get_value(fv, base)
-    (sub, con) = create_email(res)
+    today = fv.buy_1day(base=base)
+    buylog = fv.get_buylog()
+    buylog.append(today['capital'])
+    today['buy_water'] = fv.get_buylog_water(buylog)
+    if today['capital'] > 0:
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, res1day['capital'])
+        os.system(cmd)
+    (sub, con) = create_email(today)
     subject += sub
     content += con
 
 for i in ('000215', '519062'):
-    res = {}
-    res['fid'] = i
     ef = EastFund(i)
     ef.load_fundprice()
-    today = ef.buy_1day()
-    buy_log = ef.get_buylog()
-    buy_log.append(today[0])
-    res['capital'] = today[0]
-    res['amount'] = today[1]
-    res['gz_price'] = today[2]
-    res['wprice'] = today[3]
-    res['water'] = ef.get_buylog_water(buy_log)[0]
-    res['water_length'] = ef.get_buylog_water(buy_log)[1]
-    (sub, con) = create_1fund_email(res)
+    today = ef.buy_1day(base=base)
+    buylog = ef.get_buylog()
+    buylog.append(today['capital'])
+    today['buy_water'] = ef.get_buylog_water(buylog)
+    today['fid'] = i
+    (sub, con) = create_1fund_email(today)
     subject += sub
     content += con
 

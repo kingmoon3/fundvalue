@@ -151,37 +151,42 @@ class EastFund():
             index = len(dwjz)*n//100-1
             return (dwjz[index], ljjz[index])
 
-    def buy_1day(self, bdt=None, n=80, base=100):
+    def buy_1day(self, dt=None, n=80, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
-        dt = bdt
+        res = {
+            'capital': 0,
+            'amount': 0,
+        }
         # 非今天申购，且非交易日，则不予购买。
         if dt is not None and dt not in self.price_list.keys():
-            return (0, 0, (0, 0), (0, 0))
+            res['price'] = (0, 0)
+            res['avg_price'] = (0, 0)
+            return res
         # 如果当天购买，则采用实时最新估值。
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-            (real_price, cur_price) = self.get_gz()
+            res['price'] = self.get_gz()
+            (real_price, cur_price) = (res['price'][0], res['price'][1])
             # 如果取估值有问题，可能是假日，不申购。
             if real_price < 0:
-                return (0, 0, (0, 0), (0, 0))
+                res['price'] = (0, 0)
+                res['avg_price'] = (0, 0)
+                return res
         # 否则采用当天的净值来计算
         else:
-            real_price = self.price_list.get(dt)[0]
-            cur_price = self.price_list.get(dt)[1]
-        avg_price = self.get_avg_price(dt, 50, 60)
-        if cur_price > avg_price[1]:
-            return (0, 0, (real_price, cur_price), avg_price)
+            res['price'] = self.price_list.get(dt)
+            real_price = res['price'][0]
+            cur_price = res['price'][1]
+        res['avg_price'] = self.get_avg_price(dt, 50, 60)
+        if cur_price > res['avg_price'][1]:
+            return res
         if cur_price > 0:
-            capital = int(math.ceil((avg_price[1] / cur_price) ** n * base))
-            # print(dt, capital)
+            res['capital'] = int(math.ceil((res['avg_price'][1] / cur_price) ** n * base))
             # 以累计净值计算购买数量，不准确。
-            amount = round(capital/cur_price, 2)
-        else:
-            capital = 0
-            amount = 0
-        return (capital, amount, (real_price, cur_price), avg_price)
+            res['amount'] = round(res['capital'] / cur_price, 2)
+        return res
 
     def get_buylog_water(self, buy_log):
         """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
@@ -206,8 +211,8 @@ class EastFund():
             if dt not in self.price_list.keys():
                 continue
             res = self.buy_1day(dt, n, base)
-            if int(res[0]) > 0:
-                buy_log.append(res[0])
+            if int(res['capital']) > 0:
+                buy_log.append(res['capital'])
         return buy_log
 
     def buy_longtime(self, begin_date, end_date, n=80, base=100):
@@ -224,11 +229,11 @@ class EastFund():
                 continue
             fprice = self.price_list[dt][1]
             res = self.buy_1day(dt, n)
-            buy_log.append(res[0])
-            b_capital = b_capital + res[0]
-            b_amount = b_amount + res[1]
+            buy_log.append(res['capital'])
+            b_capital = b_capital + res['capital']
+            b_amount = b_amount + res['amount']
         win = 0 if b_capital == 0 else (
-            b_amount*fprice-b_capital) * 100 / b_capital
+            b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
         avg_price = 0 if b_amount == 0 else (b_capital/b_amount)
         return (round(b_capital, 2), round(b_amount, 2), win, round(avg_price, 4), fprice)
@@ -245,6 +250,6 @@ if __name__ == '__main__':
     print(ef.buy_longtime(begin_date, end_date, 100))
     today = ef.buy_1day()
     buy_log = ef.get_buylog()
-    buy_log.append(today[0])
+    buy_log.append(today['capital'])
     print(today)
     print(ef.get_buylog_water(buy_log))
