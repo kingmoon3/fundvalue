@@ -106,7 +106,7 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
     buylog.append(today['capital'])
     today['buy_water'] = fv.get_buylog_water(buylog)
     if today['capital'] > 0:
-        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, res1day['capital'])
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
         os.system(cmd)
     (sub, con) = create_email(today)
     subject += sub
