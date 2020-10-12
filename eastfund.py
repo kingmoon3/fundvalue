@@ -219,15 +219,16 @@ class EastFund():
             res['price'] = self.price_list.get(dt)
             real_price = res['price'][0]
             cur_price = res['price'][1]
+        res['avg_price'] = self.get_avg_price(dt, 50, 60)
         price60 = []
-        for i in range(1, 70):
+        for i in range(1, 75):
             d = dt - datetime.timedelta(days=i)
             if d in self.price_list:
                 price60.append(self.price_list.get(d)[1])
         price60.append(cur_price)
         price60.sort(reverse=True)
-        res['avg_price'] = (0, 0)
-        weight = (price60.index(cur_price) * 1.0 / len(price60)) / 0.5
+        weight = ((price60.index(cur_price) + 1) * 1.0 / len(price60)) / 0.5
+        res['rank'] = (round(1 - (price60.index(cur_price) + 1) * 1.0 / len(price60), 4), len(price60))
         if int(weight) < 1:
             weight = 0
         res['capital'] = int(base * weight ** 2)

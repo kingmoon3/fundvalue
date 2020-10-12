@@ -82,10 +82,12 @@ def create_1fund_email(values):
         content = u'''<h4>{} 申购 {} 元</h4>'''.format(res['fid'], res['capital'])
     content = content + u'''基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
+        该基金净值排名水位线为：{}，{} 次 <br />
         该基金五年购买水位线为：{}，{} 次 <br />
         <br />
         '''.format(res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
             round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
+            res['rank'][0], res['rank'][1],
             round(res['buy_water'][0], 4), res['buy_water'][1])
     return (subject, content)
 
