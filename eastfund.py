@@ -226,7 +226,7 @@ class EastFund():
                 price60.append(self.price_list.get(d)[1])
         price60.append(cur_price)
         price60.sort(reverse=True)
-        res['avg_price'] = 0
+        res['avg_price'] = (0, 0)
         weight = (price60.index(cur_price) * 1.0 / len(price60)) / 0.5
         if int(weight) < 1:
             weight = 0
