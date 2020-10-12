@@ -115,7 +115,7 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
 for i in ('000215', '519062'):
     ef = EastFund(i)
     ef.load_fundprice()
-    today = ef.buy_1day(base=base)
+    today = ef.buy_1day2(base=base)
     buylog = ef.get_buylog()
     buylog.append(today['capital'])
     today['buy_water'] = ef.get_buylog_water(buylog)

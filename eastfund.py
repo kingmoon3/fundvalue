@@ -153,6 +153,7 @@ class EastFund():
 
     def buy_1day(self, dt=None, n=80, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
+            n 为幂。本次主要考虑基金净值与60天均值的比，未考虑净值在60天的排位。
             dt is None，表示今天购买，否则校验是否为交易日。
         """
         res = {
@@ -188,6 +189,51 @@ class EastFund():
             res['amount'] = round(res['capital'] / cur_price, 2)
         return res
 
+    def buy_1day2(self, dt=None, n=80, base=100):
+        """ 对指定的某一天进行购买，用于测试，默认买100块钱。
+            n 此处无用。本次主要考虑净值在60天的排位，未考虑价格。
+            对于 000215 这种波动不大的基金，考虑当前排位收益更高。
+            dt is None，表示今天购买，否则校验是否为交易日。
+        """
+        res = {
+            'capital': 0,
+            'amount': 0,
+        }
+        # 非今天申购，且非交易日，则不予购买。
+        if dt is not None and dt not in self.price_list.keys():
+            res['price'] = (0, 0)
+            res['avg_price'] = (0, 0)
+            return res
+        # 如果当天购买，则采用实时最新估值。
+        if dt is None:
+            dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+            res['price'] = self.get_gz()
+            (real_price, cur_price) = (res['price'][0], res['price'][1])
+            # 如果取估值有问题，可能是假日，不申购。
+            if real_price < 0:
+                res['price'] = (0, 0)
+                res['avg_price'] = (0, 0)
+                return res
+        # 否则采用当天的净值来计算
+        else:
+            res['price'] = self.price_list.get(dt)
+            real_price = res['price'][0]
+            cur_price = res['price'][1]
+        price60 = []
+        for i in range(1, 70):
+            d = dt - datetime.timedelta(days=i)
+            if d in self.price_list:
+                price60.append(self.price_list.get(d)[1])
+        price60.append(cur_price)
+        price60.sort(reverse=True)
+        res['avg_price'] = 0
+        weight = (price60.index(cur_price) * 1.0 / len(price60)) / 0.5
+        if int(weight) < 1:
+            weight = 0
+        res['capital'] = int(base * weight ** 2)
+        res['amount'] = round(res['capital'] / cur_price, 2)
+        return res
+
     def get_buylog_water(self, buy_log):
         """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
         """
@@ -210,7 +256,7 @@ class EastFund():
             dt = dt + datetime.timedelta(days=1)
             if dt not in self.price_list.keys():
                 continue
-            res = self.buy_1day(dt, n, base)
+            res = self.buy_1day2(dt, n, base)
             if int(res['capital']) > 0:
                 buy_log.append(res['capital'])
         return buy_log
@@ -228,10 +274,12 @@ class EastFund():
             if dt not in self.price_list.keys():
                 continue
             fprice = self.price_list[dt][1]
-            res = self.buy_1day(dt, n)
+            res = self.buy_1day2(dt, n)
             buy_log.append(res['capital'])
             b_capital = b_capital + res['capital']
             b_amount = b_amount + res['amount']
+            # if res['capital'] > 0:
+            #     print(dt, res['capital'], res['amount'])
         win = 0 if b_capital == 0 else (
             b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
@@ -246,9 +294,9 @@ if __name__ == '__main__':
     ef = EastFund(index_code)
     ef.load_fundprice()
     begin_date = datetime.datetime(2015, 6, 30, 0, 0, 0)
-    end_date = datetime.datetime(2020, 6, 30, 0, 0, 0)
+    end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
     print(ef.buy_longtime(begin_date, end_date, 100))
-    today = ef.buy_1day()
+    today = ef.buy_1day2()
     buy_log = ef.get_buylog()
     buy_log.append(today['capital'])
     print(today)
