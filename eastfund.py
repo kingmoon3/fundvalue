@@ -181,6 +181,14 @@ class EastFund():
             real_price = res['price'][0]
             cur_price = res['price'][1]
         res['avg_price'] = self.get_avg_price(dt, 50, 60)
+        price60 = []
+        for i in range(1, 75):
+            d = dt - datetime.timedelta(days=i)
+            if d in self.price_list:
+                price60.append(self.price_list.get(d)[1])
+        price60.append(cur_price)
+        price60.sort(reverse=True)
+        res['rank'] = (round(1 - (price60.index(cur_price) + 1) * 1.0 / len(price60), 4), len(price60))
         if cur_price > res['avg_price'][1]:
             return res
         if cur_price > 0:

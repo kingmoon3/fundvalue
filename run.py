@@ -11,6 +11,7 @@ import os
 
 from fundvalue import FundValue
 from eastfund import EastFund
+from njb import Njb
 from mailconfig import smtphost, userfrom, userpassword, userto
 
 def sendmail(receiver, subject, html, att=None, att_name=None):
@@ -122,6 +123,18 @@ for i in ('000215', '519062'):
     buylog.append(today['capital'])
     today['buy_water'] = ef.get_buylog_water(buylog)
     today['fid'] = i
+    (sub, con) = create_1fund_email(today)
+    subject += sub
+    content += con
+
+for i in ('qg',):
+    n = Njb('qg')
+    n.init_xnjz()
+    today = n.buy_1day(n=10, base=base)
+    buy_log = n.get_buylog()
+    buy_log.append(today['capital'])
+    today['buy_water'] = n.get_buylog_water(buylog)
+    today['fid'] = u'牛基宝全股型'
     (sub, con) = create_1fund_email(today)
     subject += sub
     content += con
