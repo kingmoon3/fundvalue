@@ -246,7 +246,7 @@ class EastFund():
     def get_buylog_water(self, buy_log):
         """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
         """
-        if len(buy_log) <= 50:
+        if len(buy_log) <= 1:
             return (0, len(buy_log))
         else:
             fprice = buy_log[-1]
