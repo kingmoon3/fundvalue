@@ -115,7 +115,7 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
     subject += sub
     content += con
 
-for i in ('000215', '519062'):
+for i in ('000215',):
     ef = EastFund(i)
     ef.load_fundprice()
     today = ef.buy_1day2(base=base)
