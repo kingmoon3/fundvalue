@@ -14,6 +14,7 @@ from eastfund import EastFund
 from njb import Njb
 from mailconfig import smtphost, userfrom, userpassword, userto
 
+
 def sendmail(receiver, subject, html, att=None, att_name=None):
     if att is None:
         msg = MIMEMultipart('alternative')
@@ -33,10 +34,10 @@ def sendmail(receiver, subject, html, att=None, att_name=None):
     msg.attach(part2)
     # 构造附件
     if att is not None:
-        #att = MIMEText(open(att, 'rb').read(), 'base64', 'utf-8')
+        # att = MIMEText(open(att, 'rb').read(), 'base64', 'utf-8')
         msg_att = MIMEApplication(open(att, 'rb').read())
-        #msg_att["Content-Type"] = 'application/octet-stream'
-        #msg_att["Content-Disposition"] = 'attachment; filename="%s"' % att_name
+        # msg_att["Content-Type"] = 'application/octet-stream'
+        # msg_att["Content-Disposition"] = 'attachment; filename="%s"' % att_name
         msg_att.add_header('Content-Disposition', 'attachment', filename=att_name)
         msg.attach(msg_att)
     try:
@@ -47,8 +48,9 @@ def sendmail(receiver, subject, html, att=None, att_name=None):
         smtp.quit()
         return True
     except smtplib.SMTPException as ex:
-        logging.error(u"邮件发送失败，请检查邮件配置:{}".format(ex))
+        print(u"邮件发送失败，请检查邮件配置:{}".format(ex))
         return False
+
 
 def create_email(values):
     res = values
@@ -68,10 +70,12 @@ def create_email(values):
         该基金的年度平均净值为：{}，{} <br />
         该基金五年购买水位线为：{}，{} 次<br />
         <br />
-        '''.format(res['index_name'], res['pe'], res['pe30'], res['pe50'], res['pe70'],
+        '''.format(
+            res['index_name'], res['pe'], res['pe30'], res['pe50'], res['pe70'],
             res['pe90'], res['fid'], res['price'][0], res['price'][1], res['avg_price'][0],
             res['avg_price'][1], res['buy_water'][0], res['buy_water'][1])
     return (subject, content)
+
 
 def create_1fund_email(values):
     res = values
@@ -86,7 +90,8 @@ def create_1fund_email(values):
         该基金净值排名水位线为：{}，{} 次 <br />
         该基金五年购买水位线为：{}，{} 次 <br />
         <br />
-        '''.format(res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
+        '''.format(
+            res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
             round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
             res['rank'][0], res['rank'][1],
             round(res['buy_water'][0], 4), res['buy_water'][1])
@@ -109,7 +114,8 @@ for i in ('hs300', 'zzbank', 'sh50', 'zzbonus', 'hkhs', 'gem', 'zzxf', 'zzwine',
     buylog.append(today['capital'])
     today['buy_water'] = fv.get_buylog_water(buylog)
     if today['capital'] > 0:
-        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(
+            datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
         os.system(cmd)
     (sub, con) = create_email(today)
     subject += sub

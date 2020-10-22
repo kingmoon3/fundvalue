@@ -2,7 +2,6 @@
 
 import requests
 import datetime
-import time
 import json
 import re
 import math
@@ -258,7 +257,8 @@ class EastFund():
     def get_buylog(self, end_date=None, days=365*5, n=80, base=100):
         buy_log = []
         if end_date is None:
-            end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) - datetime.timedelta(days=1)
+            end_date = datetime.datetime.combine(
+                datetime.date.today(), datetime.datetime.min.time()) - datetime.timedelta(days=1)
         begin_date = end_date - datetime.timedelta(days=days)
         dt = begin_date
         for i in range(days):
@@ -294,6 +294,7 @@ class EastFund():
         win = str(round(win, 2)) + '%'
         avg_price = 0 if b_amount == 0 else (b_capital/b_amount)
         return (round(b_capital, 2), round(b_amount, 2), win, round(avg_price, 4), fprice)
+
 
 if __name__ == '__main__':
 
