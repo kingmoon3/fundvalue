@@ -129,6 +129,7 @@ if __name__ == '__main__':
     today = n.buy_1day(n=10)
     buy_log = n.get_buylog()
     buy_log.append(today['capital'])
+    print(buy_log)
     print(today)
     print(n.get_buylog_water(buy_log))
 
