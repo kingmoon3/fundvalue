@@ -76,7 +76,7 @@ class Njb(EastFund):
         gz[1] = round(gz[1] / ratio1, 4)
         return gz
 
-    def get_buylog(self, end_date=None, days=318, n=10, base=100):
+    def get_buylog(self, end_date=None, days=330, n=10, base=100):
         buy_log = []
         if end_date is None:
             end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) - datetime.timedelta(days=1)
