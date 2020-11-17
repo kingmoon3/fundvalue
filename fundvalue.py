@@ -53,6 +53,9 @@ class FundValue():
             'zzxf': {
                 'index': {'code': 'SH000932', 'name': u'主要消费', 'vq': 'pe'},
                 'fund': {'fid': '000248', 'byear': 2016 }},
+            'food': {
+                'index': {'code': 'SZ399396', 'name': u'食品饮料', 'vq': 'pe'},
+                'fund': {'fid': '001631', 'byear': 2016 }},
             'zzwine': {
                 'index': {'code': 'SZ399997', 'name': u'中证白酒', 'vq': 'pe'},
                 'fund': {'fid': '161725', 'byear': 2016 }},
