@@ -80,6 +80,9 @@ class FundValue():
             'base50': {
                 'index': {'code': 'SH000925', 'name': u'基本面50', 'vq': 'pe'},
                 'fund': {'fid': '160716', 'byear': 2011 }},
+            'car': {
+                'index': {'code': 'SZ399417', 'name': u'新能源车', 'vq': 'pe'},
+                'fund': {'fid': '501057', 'byear': 2019 }},
         }
         self.index_pbe = {}
         self.fund_jz = {}

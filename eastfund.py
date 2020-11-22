@@ -181,7 +181,7 @@ class EastFund():
             cur_price = res['price'][1]
         res['avg_price'] = self.get_avg_price(dt, 50, 60)
         price60 = []
-        for i in range(1, 75):
+        for i in range(1, 70):
             d = dt - datetime.timedelta(days=i)
             if d in self.price_list:
                 price60.append(self.price_list.get(d)[1])
