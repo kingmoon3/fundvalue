@@ -252,7 +252,7 @@ class FundValue():
             'fid': self.fid,
             'index_name': self.index['name']
         }
-        if len(self.trade_days) < 650:
+        if len(self.trade_days) < 600:
             res['capital'] = 0
             res['amount'] = 0
             return res
