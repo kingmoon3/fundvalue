@@ -49,7 +49,7 @@ class FundValue():
                 'fund': {'fid': '160218', 'byear': 2014 }},
             'zzzq': {
                 'index': {'code': 'SZ399975', 'name': u'全指证券', 'vq': 'pb'},
-                'fund': {'fid': '160633', 'byear': 2016 }},
+                'fund': {'fid': '004069', 'byear': 2018 }},
             'zzxf': {
                 'index': {'code': 'SH000932', 'name': u'主要消费', 'vq': 'pe'},
                 'fund': {'fid': '000248', 'byear': 2016 }},
