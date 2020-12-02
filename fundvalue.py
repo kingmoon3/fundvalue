@@ -323,10 +323,17 @@ class FundValue():
             dt = begin_date + datetime.timedelta(days=i)
             if dt not in self.trade_days:
                 continue
-            # 按水位线加权购买，效果不明显。
+            # 按购买金额的水位线加权购买，效果略有提升。
+            # 可参考水位线进行一次性投入，不宜作为长期购买指标。
             # buylist = self.get_buylog(dt)
             # buylist.append(buylog[dt]['capital'])
-            # weight = self.get_buylog_water(buylist)[0] + 1
+            # buyw = int(self.get_buylog_water(buylist)[0] * 100)
+            # if buyw <= 40:
+            #     weight = 0
+            # elif 40 < buyw and buyw < 70:
+            #     weight = 2
+            # elif buyw >= 70:
+            #     weight = 4
             weight = 1
             b_capital = b_capital + buylog[dt]['capital'] * weight
             b_amount = b_amount + buylog[dt]['amount'] * weight
