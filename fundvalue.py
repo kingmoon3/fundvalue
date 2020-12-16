@@ -34,7 +34,7 @@ class FundValue():
                 'fund': {'fid': '001548', 'byear': 2016 }},
             'zzbonus': {
                 'index': {'code': 'SH000922', 'name': u'中证红利', 'vq': 'pe'},
-                'fund': {'fid': '100032', 'byear': 2011 }},
+                'fund': {'fid': '090010', 'byear': 2011 }},
             'gem': {
                 'index': {'code': 'SZ399006', 'name': u'创业板', 'vq': 'pe'},
                 'fund': {'fid': '003765', 'byear': 2018 }},

@@ -104,8 +104,14 @@ class EastFund():
     def get_delta_price(self, end_date=None):
         price = self.load_fundprice(end_date)
         max_dt = max(price.keys())
+        # 基金分红
         delta_price = price[max_dt][1] - price[max_dt][0]
-        return delta_price
+        flag = True
+        # 基金分拆
+        if self.fid in ('160218', '161725', '162412'):
+            delta_price = price[max_dt][1] / price[max_dt][0]
+            flag = False
+        return (delta_price, flag)
 
     def get_gz(self):
         """ 获取当前时间的估值 """
@@ -115,14 +121,17 @@ class EastFund():
         header['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         header['User-Agent'] += ' AppleWebKit/537.36 (KHTML, like Gecko)'
         header['User-Agent'] += ' Chrome/79.0.3945.130 Safari/537.36'
-        delta_price = self.get_delta_price()
+        (delta_price, flag) = self.get_delta_price()
         try:
             res = requests.get(url=url, headers=header)
             gz_dict = self.parse_jsonp(res)
             dnow = datetime.datetime.now().strftime('%Y-%m-%d')
             if dnow != gz_dict['gztime'].split(' ')[0]:
                 return (0, 0)
-            return (float(gz_dict['gsz']), float(gz_dict['gsz']) + delta_price)
+            if flag is True:
+                return (float(gz_dict['gsz']), float(gz_dict['gsz']) + delta_price)
+            else:
+                return (float(gz_dict['gsz']), float(gz_dict['gsz']) * delta_price)
         except Exception as e:
             print(e)
             return (0, 0)
