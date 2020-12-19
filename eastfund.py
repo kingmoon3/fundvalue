@@ -159,7 +159,7 @@ class EastFund():
             index = len(dwjz)*n//100-1
             return (dwjz[index], ljjz[index])
 
-    def buy_1day(self, dt=None, n=80, base=100):
+    def buy_1day(self, dt=None, n=80, base=100, avgdays=60):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             n 为幂。本次主要考虑基金净值与60天均值的比，未考虑净值在60天的排位。
             dt is None，表示今天购买，否则校验是否为交易日。
@@ -188,7 +188,7 @@ class EastFund():
             res['price'] = self.price_list.get(dt)
             real_price = res['price'][0]
             cur_price = res['price'][1]
-        res['avg_price'] = self.get_avg_price(dt, 50, 60)
+        res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         price60 = []
         for i in range(1, 70):
             d = dt - datetime.timedelta(days=i)
@@ -205,7 +205,7 @@ class EastFund():
             res['amount'] = round(res['capital'] / cur_price, 2)
         return res
 
-    def buy_1day2(self, dt=None, n=80, base=100):
+    def buy_1day2(self, dt=None, n=80, base=100, avgdays=60):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。
             n 此处无用。本次主要考虑净值在60天的排位，未考虑价格。
             对于 000215 这种波动不大的基金，考虑当前排位收益更高。
@@ -235,7 +235,7 @@ class EastFund():
             res['price'] = self.price_list.get(dt)
             real_price = res['price'][0]
             cur_price = res['price'][1]
-        res['avg_price'] = self.get_avg_price(dt, 50, 60)
+        res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         price60 = []
         for i in range(1, 75):
             d = dt - datetime.timedelta(days=i)

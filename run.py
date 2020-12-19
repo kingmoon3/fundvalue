@@ -12,6 +12,7 @@ import os
 from fundvalue import FundValue
 from eastfund import EastFund
 from njb import Njb
+from wwxf import Wwxf
 from mailconfig import smtphost, userfrom, userpassword, userto
 
 
@@ -141,6 +142,18 @@ for i in ('qg',):
     buylog.append(today['capital'])
     today['buy_water'] = n.get_buylog_water(buylog)
     today['fid'] = u'牛基宝全股型'
+    (sub, con) = create_1fund_email(today)
+    subject += sub
+    content += con
+
+for i in ('wwxf',):
+    n = Wwxf()
+    n.init_xnjz()
+    today = n.buy_1day(n=10, base=base, avgdays=30)
+    buylog = n.get_buylog()
+    buylog.append(today['capital'])
+    today['buy_water'] = n.get_buylog_water(buylog)
+    today['fid'] = u'我要稳稳的幸福'
     (sub, con) = create_1fund_email(today)
     subject += sub
     content += con
