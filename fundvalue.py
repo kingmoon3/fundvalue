@@ -314,7 +314,7 @@ class FundValue():
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
         """
         fid = self.fid
-        buylog = self.load_buylog()
+        buylog = self.load_buylog(end_date)
         b_capital = 0
         b_amount = 0
         # 获取最高盈利点
@@ -359,14 +359,15 @@ if __name__ == '__main__':
     fv.init_fund_jz()
     t = fv.fund['byear']
 
-    end_year = 2020
-    for i in range(t, end_year):
-        j = i + 1
-        print(i)
-        bd = datetime.datetime(i, 1, 1)
-        ed = datetime.datetime(j, 1, 1)
-        print(fv.buy_longtime(bd, ed, 2, 4))
+    t = 2012
+    end_year = 2013
+    # for i in range(t, end_year):
+    #     j = i + 1
+    #     print(i)
+    #     bd = datetime.datetime(i, 1, 1)
+    #     ed = datetime.datetime(j, 1, 1)
+    #     print(fv.buy_longtime(bd, ed, 2, 4))
     bd = datetime.datetime(t, 1, 1)
     ed = datetime.datetime(end_year, 1, 1)
     print(fv.buy_longtime(bd, ed, 2, 4))
-    print(fv.buy_1day(n_pe=2, n_price=4, base=100))
+    # print(fv.buy_1day(n_pe=2, n_price=4, base=100))

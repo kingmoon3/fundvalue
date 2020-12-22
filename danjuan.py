@@ -50,6 +50,9 @@ class Danjuan():
     def get_pbe_nwater(self, end_date, n=30, day=365*5):
         """ 获取指定日期的水位线，默认向前搜索5年
         """
+        if end_date is None:
+            end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+            end_date = end_date - datetime.timedelta(days=1)
         pe_value = [
             self.pbe.get(end_date-datetime.timedelta(days=i), -1)
             for i in range(0, day)]

@@ -34,11 +34,14 @@ class Njb(EastFund):
         ]
 
     def init_xnjz(self):
+        return self.load_fundprice()
+
+    def load_fundprice(self):
         fr = open(self.record_path, 'r')
         for line in fr.readlines():
             arr = line.strip().split(',')
             d = datetime.datetime.strptime(arr[1], '%Y-%m-%d')
-            self.price_list[d] = (float(arr[2]), float(arr[3]))
+            self.price_list[d] = (float(arr[2]), float(arr[2]))
         fr.close()
         jz = {}
         prices = []
@@ -109,8 +112,8 @@ class Njb(EastFund):
             buy_log.append(res['capital'])
             b_capital = b_capital + res['capital']
             b_amount = b_amount + res['amount']
-            # if res['capital'] > 0:
-            #     print(dt, res['capital'], res['amount'])
+            if res['capital'] > 0:
+                print(dt, res['capital'], res['amount'])
         win = 0 if b_capital == 0 else (
             b_amount * fprice - b_capital) * 100 / b_capital
         win = str(round(win, 2)) + '%'
@@ -129,6 +132,6 @@ if __name__ == '__main__':
     today = n.buy_1day(n=10)
     buy_log = n.get_buylog()
     buy_log.append(today['capital'])
-    print(today)
-    print(n.get_buylog_water(buy_log))
+    # print(today)
+    # print(n.get_buylog_water(buy_log))
 

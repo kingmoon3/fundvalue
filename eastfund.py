@@ -18,6 +18,7 @@ class EastFund():
         self.fid = str(fid)
         self.price_list = {}
         self.record_path = './record.' + str(fid)
+        self.buylog_path = './buylog.' + str(fid)
 
     def parse_jsonp(self, response):
         return json.loads(
@@ -90,8 +91,7 @@ class EastFund():
                 self.save_fundprice(result)
                 self.price_list = result
                 return result
-        except Exception as e:
-            print(e)
+        except Exception:
             print('First fetch record')
             fprice = self.get_fundprice()
             for arr in fprice:
@@ -146,6 +146,8 @@ class EastFund():
             self.price_list[end_date-datetime.timedelta(days=i)]
             for i in range(1, day)
             if end_date-datetime.timedelta(days=i) in self.price_list]
+        if prices == []:
+            return (0, 0)
         for i in prices:
             dwjz.append(i[0])
             ljjz.append(i[1])
@@ -237,7 +239,7 @@ class EastFund():
             cur_price = res['price'][1]
         res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         price60 = []
-        for i in range(1, 75):
+        for i in range(1, avgdays):
             d = dt - datetime.timedelta(days=i)
             if d in self.price_list:
                 price60.append(self.price_list.get(d)[1])
@@ -315,8 +317,8 @@ if __name__ == '__main__':
     begin_date = datetime.datetime(2015, 6, 30, 0, 0, 0)
     end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
     print(ef.buy_longtime(begin_date, end_date, 100))
-    today = ef.buy_1day2()
-    buy_log = ef.get_buylog()
-    buy_log.append(today['capital'])
-    print(today)
-    print(ef.get_buylog_water(buy_log))
+    # today = ef.buy_1day2()
+    # buy_log = ef.get_buylog()
+    # buy_log.append(today['capital'])
+    # print(today)
+    # print(ef.get_buylog_water(buy_log))

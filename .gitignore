@@ -117,4 +117,3 @@ dmypy.json
 /record.*
 !/record.njb*
 !/record.wwxf
-/buylog.*
