@@ -170,14 +170,13 @@ class Policy(Fof):
             newlog = {}
             for i in range((end_date - begin_date).days + 1):
                 dt = begin_date + datetime.timedelta(days=i)
-                res = getattr(self, buyfunc)(dt, avgdays, n, base)
-                newlog[dt] = {
-                    'capital': res['capital'],
-                    'amount': res['amount']
-                }
-            self.buylog = buylog
-            buylog = self.save_buylog(newlog)
-            return buylog
+                if dt not in self.price_list.keys():
+                    newlog[dt] = { 'capital': 0, 'amount': 0 }
+                else:
+                    res = getattr(self, buyfunc)(dt, avgdays, n, base)
+                    newlog[dt] = { 'capital': res['capital'], 'amount': res['amount'] }
+            self.buylog = self.save_buylog(newlog)
+            return self.buylog
 
     def fetch_buylog_list(self, end_date=None, days=365*5):
         buylog = self.buylog
