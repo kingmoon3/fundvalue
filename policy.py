@@ -181,10 +181,9 @@ class Policy(Fof):
             self.buylog = self.save_buylog(newlog)
             return self.buylog
 
-    def fetch_buylog_list(self, end_date=None, days=365*5):
-        """ 长期购买一段时间，返回购买列表。
+    def fetch_buylog_water(self, fprice, end_date=None, days=365*5):
+        """ 长期购买一段时间，计算 fprice 的水位线，返回购买历史记录长度。
         """
-        buylog = self.buylog
         buylist = []
         if end_date is None:
             end_date = datetime.datetime.combine(
@@ -193,24 +192,18 @@ class Policy(Fof):
         dt = begin_date
         for i in range(days + 1):
             dt = begin_date + datetime.timedelta(days=i)
-            if dt not in self.trade_days or dt not in buylog:
+            if dt not in self.trade_days or dt not in self.buylog:
                 continue
-            if buylog[dt]['capital'] > 0:
-                buylist.append(buylog[dt]['capital'])
-        return buylist
-
-    def fetch_buylog_water(self, buylog_list):
-        """ 长期购买一段时间，计算当前购买的水位线。利用水位线进一步提高购买比例，事实证明没用。
-        """
-        if len(buylog_list) <= 20:
-            return (0, len(buylog_list))
-        else:
-            fprice = buylog_list[-1]
-            if fprice == 0:
-                return (0, len(buylog_list))
-            sorted_log = sorted(buylog_list)
-            weight = 1.0 * sorted_log.index(fprice) / len(sorted_log)
-            return (round(weight, 4), len(buylog_list))
+            if self.buylog[dt]['capital'] > 0:
+                buylist.append(self.buylog[dt]['capital'])
+        if len(buylist) <= 20:
+            return (0, len(buylist))
+        if fprice == 0:
+            return (0, len(buylist))
+        buylist.append(fprice)
+        sorted_log = sorted(buylist)
+        weight = 1.0 * sorted_log.index(fprice) / len(sorted_log)
+        return (round(weight, 4), len(buylist))
 
     def buy_1day1(self, dt, avgdays, n, base=100):
         """ 对指定的某一天进行购买，用于测试，默认买100块钱。

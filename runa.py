@@ -118,9 +118,7 @@ for index_code in (
     today['name'] = index_list[index_code]['name']
     today['fid'] = index_code
     p.load_buylog(params['buyfunc'], params['avgdays'], None, None, params['n'])
-    buylog_list = p.fetch_buylog_list(None, days=365*5)
-    buylog_list.append(today['capital'])
-    today['buy_water'] = p.fetch_buylog_water(buylog_list)
+    today['buy_water'] = p.fetch_buylog_water(today['capital'], None, days=365*5)
     if today['capital'] > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
