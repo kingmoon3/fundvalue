@@ -5,10 +5,10 @@ from eastfund import EastFund
 
 
 class Fof(EastFund):
-    """ 从本地获取基金组合价格
+    """ 从东方基金获取基金组合价格，并利用组合成分对组合进行估值。
 
     Attributes:
-        fid 为基金组合代码，nav为基金净值，nav2为累计净值。
+        fid 为基金组合代码
     """
 
     def __init__(self, fid=''):
@@ -99,11 +99,3 @@ if __name__ == '__main__':
     n.load_fundprice()
     begin_date = datetime.datetime(2020, 1, 1, 0, 0, 0)
     end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
-    # begin_date = datetime.datetime(2018, 1, 1, 0, 0, 0)
-    # end_date = datetime.datetime(2019, 1, 1, 0, 0, 0)
-    # print(n.buy_longtime(begin_date, end_date, 10, 100))
-    today = n.buy_1day(n=10)
-    buy_log = n.get_buylog()
-    buy_log.append(today['capital'])
-    print(today)
-    # print(n.get_buylog_water(buy_log))

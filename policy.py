@@ -9,6 +9,9 @@ from indexs import index_list
 
 
 class Policy(Fof):
+    """ 从东方基金获取基金价格，从蛋卷获取指数估值，并加载基金净值和基金购买日志。
+    """
+
     def __init__(self, fid):
         Fof.__init__(self, fid)
         self.buylog = []
@@ -43,6 +46,9 @@ class Policy(Fof):
         return (avg_price/cur_price) ** n
 
     def get_dt_price(self, dt, avgdays):
+        """ 获取基金指定日期的价格
+            dt 为 None，返回当天估值。
+        """
         # 非今天申购，且非交易日，则不予购买。
         res = {}
         if dt is not None and dt not in self.price_list.keys():
@@ -64,20 +70,10 @@ class Policy(Fof):
         res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         return res
 
-    def get_price_rank(self, cur_price, dt, avgdays):
-        res = {}
-        price60 = []
-        for i in range(1, avgdays):
-            d = dt - datetime.timedelta(days=i)
-            if d in self.price_list:
-                price60.append(self.price_list.get(d)[1])
-        price60.append(cur_price)
-        price60.sort(reverse=True)
-        res['rank'] = (round(1 - (price60.index(cur_price) + 1) * 1.0 / len(price60), 4), len(price60))
-        res['price60'] = price60
-        return res
-
     def fetch_price_info(self, dt, avgdays):
+        """ 获取基金价格在 avgdays 中的排名
+            dt 为 None，使用当天估值。
+        """
         res = {
             'capital': 0,
             'amount': 0,
@@ -86,8 +82,15 @@ class Policy(Fof):
         res.update(price_info)
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-        rank_info = self.get_price_rank(res['price'][1], dt, avgdays)
-        res.update(rank_info)
+        price60 = []
+        for i in range(1, avgdays):
+            d = dt - datetime.timedelta(days=i)
+            if d in self.price_list:
+                price60.append(self.price_list.get(d)[1])
+        price60.append(res['price'][1])
+        price60.sort(reverse=True)
+        res['rank'] = (round(1 - (price60.index(res['price'][1]) + 1) * 1.0 / len(price60), 4), len(price60))
+        res['price60'] = price60
         return res
 
     def save_buylog(self, newlog):
@@ -171,14 +174,16 @@ class Policy(Fof):
             for i in range((end_date - begin_date).days + 1):
                 dt = begin_date + datetime.timedelta(days=i)
                 if dt not in self.price_list.keys():
-                    newlog[dt] = { 'capital': 0, 'amount': 0 }
+                    newlog[dt] = {'capital': 0, 'amount': 0}
                 else:
                     res = getattr(self, buyfunc)(dt, avgdays, n, base)
-                    newlog[dt] = { 'capital': res['capital'], 'amount': res['amount'] }
+                    newlog[dt] = {'capital': res['capital'], 'amount': res['amount']}
             self.buylog = self.save_buylog(newlog)
             return self.buylog
 
     def fetch_buylog_list(self, end_date=None, days=365*5):
+        """ 长期购买一段时间，返回购买列表。
+        """
         buylog = self.buylog
         buylist = []
         if end_date is None:
@@ -321,4 +326,3 @@ if __name__ == '__main__':
     begin_date = datetime.datetime(2020, 1, 1, 0, 0, 0)
     end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
     print(p.buy_longtime(params['buyfunc'], params['avgdays'], begin_date, end_date, params['n'], 100))
-

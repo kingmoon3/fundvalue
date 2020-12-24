@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# 基金列表
+# key: 基金代码
+# code: 基金所对应的指数代码
+# name：指数名称或者基金组合名称
+# vq：指数估值依据，为 pe 或者 pb
+# buyfunc: 基金购买策略。n: 幂，扩大基金购买份额。avgdays: avgdays天的均价，用以和基金价格进行比较。
+
 index_list = {
     '100038': {
         'code': 'SH000300', 'name': u'沪深300', 'vq': 'pe',

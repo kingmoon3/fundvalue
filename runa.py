@@ -70,8 +70,10 @@ def create_email(values):
         该基金五年购买水位线为：{}，{} 次<br />
         <br />
         '''.format(
-            res['name'], res['pe'], res['pe30'], res['pe50'], res['pe70'], res['pe90'], res['fid'],
-            res['price'][0], res['price'][1], round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
+            res['name'], res['pe'],
+            res['pe30'], res['pe50'], res['pe70'], res['pe90'],
+            res['fid'], res['price'][0], res['price'][1],
+            round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
             res['buy_water'][0], res['buy_water'][1])
     return (subject, content)
 
@@ -83,14 +85,14 @@ def create_1fund_email(values):
         content = u'''<h4> {} </h4>'''.format(res['name'])
     else:
         subject = u' {} 申购 {} 元，'.format(res['name'], res['capital'])
-        content = u'''<h4>{} 申购 {} 元</h4>'''.format(res['fid'], res['capital'])
+        content = u'''<h4>{} 申购 {} 元</h4>'''.format(res['name'], res['capital'])
     content = content + u'''基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
         该基金净值排名水位线为：{}，{} 次 <br />
         该基金五年购买水位线为：{}，{} 次 <br />
         <br />
         '''.format(
-            res['name'], round(res['price'][0], 4), round(res['price'][1], 4),
+            res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
             round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
             res['rank'][0], res['rank'][1],
             round(res['buy_water'][0], 4), res['buy_water'][1])
@@ -119,6 +121,10 @@ for index_code in (
     buylog_list = p.fetch_buylog_list(None, days=365*5)
     buylog_list.append(today['capital'])
     today['buy_water'] = p.fetch_buylog_water(buylog_list)
+    if today['capital'] > 0:
+        cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(
+            datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
+        os.system(cmd)
     if p.index['code'] == '':
         (sub, con) = create_1fund_email(today)
     else:
