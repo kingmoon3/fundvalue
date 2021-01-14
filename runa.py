@@ -107,9 +107,9 @@ subject = ''
 content = ''
 
 for index_code in (
-    '100038', '001594', '001548', '530015', '003986', '000948',
-    '003765', '090010', '004069', '000248', '001631', '161725', 
-    '001550', '162412', '000215', 'njbqg', 'wwxf'):
+        '100038', '001594', '001548', '530015', '003986', '000948',
+        '003765', '090010', '004069', '000248', '001631', '161725',
+        '001550', '162412', '000215', 'njbqg', 'wwxf'):
     p = Policy(index_code)
     p.load_fundprice()
     p.init_index_pbe()
@@ -121,7 +121,7 @@ for index_code in (
     today['buy_water'] = p.fetch_buylog_water(today['capital'], None, days=365*5)
     if today['capital'] > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(
-            datetime.datetime.now().strftime('%Y-%m-%d'), fv.fid, today['capital'])
+            datetime.datetime.now().strftime('%Y-%m-%d'), index_code, today['capital'])
         os.system(cmd)
     if p.index['code'] == '':
         (sub, con) = create_1fund_email(today)
@@ -139,4 +139,3 @@ else:
 
 subject = subject1 + subject
 sendmail(userto, subject, content)
-
