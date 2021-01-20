@@ -129,9 +129,9 @@ class EastFund():
             if dnow != gz_dict['gztime'].split(' ')[0]:
                 return (0, 0)
             if flag is True:
-                return (float(gz_dict['gsz']), float(gz_dict['gsz']) + delta_price)
+                return (float(gz_dict['gsz']), round(float(gz_dict['gsz']) + delta_price, 4))
             else:
-                return (float(gz_dict['gsz']), float(gz_dict['gsz']) * delta_price)
+                return (float(gz_dict['gsz']), round(float(gz_dict['gsz']) * delta_price, 4))
         except Exception as e:
             print(e)
             return (0, 0)
