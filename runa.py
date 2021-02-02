@@ -102,7 +102,7 @@ def create_1fund_email(values):
 base = 100
 dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
 
-subject1 = u'【基金申购】'
+subject1 = u'【基金申购】' + datetime.datetime.now().strftime('%Y%m%d') + ' - '
 subject = ''
 content = ''
 
