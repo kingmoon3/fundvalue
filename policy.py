@@ -132,7 +132,7 @@ class Policy(Fof):
                     fw.write('\n')
             return newlog
 
-    def load_buylog(self, buyfunc, avgdays, begin_date, end_date, n, days=365*5, base=100):
+    def load_buylog(self, buyfunc, avgdays, begin_date, end_date, n, days=365*6, base=100):
         """ 加载 5 年购买的日志，用以衡量本次购买的水位线。
         """
         buylog = {}
@@ -181,7 +181,7 @@ class Policy(Fof):
             self.buylog = self.save_buylog(newlog)
             return self.buylog
 
-    def fetch_buylog_water(self, fprice, end_date=None, days=365*5):
+    def fetch_buylog_water(self, fprice, end_date=None, days=365*6):
         """ 长期购买一段时间，计算 fprice 的水位线，返回购买历史记录长度。
         """
         buylist = []

@@ -67,7 +67,7 @@ def create_email(values):
         <br />
         基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
-        该基金五年购买水位线为：{}，{} 次<br />
+        该基金六年购买水位线为：{}，{} 次<br />
         <br />
         '''.format(
             res['name'], res['pe'],
@@ -89,7 +89,7 @@ def create_1fund_email(values):
     content = content + u'''基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
         该基金净值排名水位线为：{}，{} 次 <br />
-        该基金五年购买水位线为：{}，{} 次 <br />
+        该基金六年购买水位线为：{}，{} 次 <br />
         <br />
         '''.format(
             res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
@@ -118,7 +118,7 @@ for index_code in (
     today['name'] = index_list[index_code]['name']
     today['fid'] = index_code
     p.load_buylog(params['buyfunc'], params['avgdays'], None, None, params['n'])
-    today['buy_water'] = p.fetch_buylog_water(today['capital'], None, days=365*5)
+    today['buy_water'] = p.fetch_buylog_water(today['capital'], None, days=365*6)
     if today['capital'] > 0:
         cmd = 'echo {},{},{} >>~/buy_fund_log.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d'), index_code, today['capital'])
