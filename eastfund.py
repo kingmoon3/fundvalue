@@ -53,10 +53,16 @@ class EastFund():
             result.append((fid, f['FSRQ'], float(f['DWJZ']), float(f['LJJZ'])))
         return result
 
-    def get_revert(self, end_date=None, days=360):
+    def get_revert(self, end_date=None, cur_price=-1, days=360):
         """ 获取指定基金的历史回撤 """
         if end_date is None:
-            price = self.get_gz()
+            # 时间点为当前日期，如果有估值则使用估值，否则重新估值。
+            if cur_price < 0:
+                price = self.get_gz()
+            else:
+                price = (0, cur_price)
+            n = datetime.datetime.now()
+            end_date = datetime.datetime(n.year, n.month, n.day, 0, 0, 0)
         else:
             price = self.price_list.get(end_date, (0, 0))
         if price[1] == 0:

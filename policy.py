@@ -70,18 +70,24 @@ class Policy(Fof):
         res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         return res
 
-    def get_dt_revert(self, dt):
+    def get_dt_revert(self, dt, price):
         """ 获取基金指定日期的回撤
             dt 为 None，则使用当天估值。
         """
         res = {}
         reverts = []
+        edt = dt
+        if dt is None:
+            n = datetime.datetime.now()
+            edt = datetime.datetime(n.year, n.month, n.day, 0, 0, 0)
+            res['revert'] = self.get_revert(dt, price)
+        else:
+            res['revert'] = self.revert_list.get(dt, 0)
         for i in range(1, 360*6):
-            d = dt - datetime.timedelta(days=i)
+            d = edt - datetime.timedelta(days=i)
             r = self.revert_list.get(d, 0)
             if r > 0:
                 reverts.append(r)
-        res['revert'] = self.revert_list.get(dt, 0)
         if res['revert'] > 0:
             reverts.append(res['revert'])
             reverts.sort()
@@ -101,7 +107,7 @@ class Policy(Fof):
             'amount': 0,
         }
         price_info = self.get_dt_price(dt, avgdays)
-        revert_info = self.get_dt_revert(dt)
+        revert_info = self.get_dt_revert(dt, price_info['price'][1])
         res.update(price_info)
         res.update(revert_info)
         if dt is None:
