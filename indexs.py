@@ -93,6 +93,10 @@ index_list = {
         'code': '', 'name': u'牛基宝全股型', 'vq': '',
         'params': {'buyfunc': 'buy_1day1', 'n':{'price': 10, 'pe':1}, 'avgdays': 60}
     },
+    'njbcz': {
+        'code': '', 'name': u'牛基宝成长型', 'vq': '',
+        'params': {'buyfunc': 'buy_1day1', 'n':{'price': 10, 'pe':1}, 'avgdays': 60}
+    },
     'wwxf': {
         'code': '', 'name': u'我要稳稳的幸福', 'vq': '',
         'params': {'buyfunc': 'buy_1day1', 'n':{'price': 150, 'pe':1}, 'avgdays': 60}

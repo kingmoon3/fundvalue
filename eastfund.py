@@ -68,7 +68,6 @@ class EastFund():
         if max(p_list) <= price[1]:
             return 0
         else:
-            print(d.strftime('%Y-%m-%d'), max(p_list), price[1])
             return round((max(p_list) - price[1]) / max(p_list) * 100, 4)
 
     def save_fundprice(self, fprice):

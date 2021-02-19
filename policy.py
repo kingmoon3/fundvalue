@@ -70,6 +70,28 @@ class Policy(Fof):
         res['avg_price'] = self.get_avg_price(dt, 50, avgdays)
         return res
 
+    def get_dt_revert(self, dt):
+        """ 获取基金指定日期的回撤
+            dt 为 None，则使用当天估值。
+        """
+        res = {}
+        reverts = []
+        for i in range(1, 360*6):
+            d = dt - datetime.timedelta(days=i)
+            r = self.revert_list.get(d, 0)
+            if r > 0:
+                reverts.append(r)
+        res['revert'] = self.revert_list.get(dt, 0)
+        if res['revert'] > 0:
+            reverts.append(res['revert'])
+            reverts.sort()
+            res['revert_length'] = len(reverts)
+            res['revert_water'] = round((reverts.index(res['revert']) + 1) * 1.0 / len(reverts), 4)
+        else:
+            res['revert_length'] = len(reverts)
+            res['revert_water'] = 0
+        return res
+
     def fetch_price_info(self, dt, avgdays):
         """ 获取基金价格在 avgdays 中的排名
             dt 为 None，使用当天估值。
@@ -79,7 +101,9 @@ class Policy(Fof):
             'amount': 0,
         }
         price_info = self.get_dt_price(dt, avgdays)
+        revert_info = self.get_dt_revert(dt)
         res.update(price_info)
+        res.update(revert_info)
         if dt is None:
             dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
         price60 = []
@@ -269,6 +293,28 @@ class Policy(Fof):
             res['amount'] = round(res['capital'] / cur_price, 2)
         return res
 
+    def buy_1day4(self, dt, avgdays, n, base=100):
+        """ 对指定的某一天进行购买，用于测试，默认买100块钱。
+            主要考虑净值回撤的排位，未考虑价格。
+            n_price 为幂。本策略中无用。
+            n_pe 为幂。本策略中无用。
+            dt is None，表示今天购买，否则校验是否为交易日。
+        """
+        res = self.fetch_price_info(dt, avgdays)
+        (revert, water, cur_price) = (res['revert'], res['revert_water'], res['price'][1])
+        if revert == 0:
+            res['capital'] = 0
+            res['amount'] = 0
+        else:
+            if int(res['revert_water'] * 100) < 50:
+                weight = 0
+            else:
+                weight = (res['revert_water'] + 1) ** 6 / 10
+            if cur_price > 0:
+                res['capital'] = int(math.ceil(base * weight))
+                res['amount'] = round(res['capital'] / cur_price, 2)
+        return res
+
     def buy_longtime(self, buyfunc, avgdays, begin_date, end_date, n, base=100):
         """ 长期购买一段时间，用于测试。默认买100块钱。以最后一天累计净值为基准计算盈利。
         """
@@ -311,12 +357,12 @@ class Policy(Fof):
 
 
 if __name__ == '__main__':
-    index_code = 'njbqg'
+    index_code = 'njbcz'
     p = Policy(index_code)
     p.load_fundprice()
     p.load_revert()
     p.init_index_pbe()
     params = p.index['params']
-    begin_date = datetime.datetime(2020, 1, 1, 0, 0, 0)
-    end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
+    begin_date = datetime.datetime(2015, 7, 1, 0, 0, 0)
+    end_date = datetime.datetime(2020, 7, 1, 0, 0, 0)
     print(p.buy_longtime(params['buyfunc'], params['avgdays'], begin_date, end_date, params['n'], 100))
