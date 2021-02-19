@@ -314,6 +314,7 @@ if __name__ == '__main__':
     index_code = 'njbqg'
     p = Policy(index_code)
     p.load_fundprice()
+    p.load_revert()
     p.init_index_pbe()
     params = p.index['params']
     begin_date = datetime.datetime(2020, 1, 1, 0, 0, 0)

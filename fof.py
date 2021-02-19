@@ -18,13 +18,25 @@ class Fof(EastFund):
             self.funds = [
                 {'fid': '001975', 'p': 12},
                 {'fid': '001714', 'p': 11},
+                {'fid': '001764', 'p': 11},
                 {'fid': '001856', 'p': 11},
                 {'fid': '005354', 'p': 11},
                 {'fid': '009277', 'p': 11},
                 {'fid': '160133', 'p': 11},
                 {'fid': '163415', 'p': 11},
-                {'fid': '180031', 'p': 11},
                 {'fid': '450009', 'p': 11},
+            ]
+        elif fid == 'njbcz':
+            self.funds = [
+                {'fid': '003328', 'p': 15},
+                {'fid': '003847', 'p': 15},
+                {'fid': '001764', 'p': 10},
+                {'fid': '001975', 'p': 10},
+                {'fid': '004241', 'p': 10},
+                {'fid': '005354', 'p': 10},
+                {'fid': '009277', 'p': 10},
+                {'fid': '163415', 'p': 10},
+                {'fid': '450009', 'p': 10},
             ]
         elif fid == 'wwxf':
             self.funds = [
@@ -95,7 +107,6 @@ class Fof(EastFund):
 
 
 if __name__ == '__main__':
-    n = Fof('njbqg')
+    n = Fof('njbcz')
     n.load_fundprice()
-    begin_date = datetime.datetime(2020, 1, 1, 0, 0, 0)
-    end_date = datetime.datetime(2020, 9, 30, 0, 0, 0)
+    n.load_revert()

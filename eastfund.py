@@ -17,8 +17,10 @@ class EastFund():
     def __init__(self, fid):
         self.fid = str(fid)
         self.price_list = {}
+        self.revert_list = {}
         self.record_path = './record.' + str(fid)
         self.buylog_path = './buylog.' + str(fid)
+        self.revert_path = './revert.' + str(fid)
 
     def parse_jsonp(self, response):
         return json.loads(
@@ -51,6 +53,24 @@ class EastFund():
             result.append((fid, f['FSRQ'], float(f['DWJZ']), float(f['LJJZ'])))
         return result
 
+    def get_revert(self, end_date=None, days=360):
+        """ 获取指定基金的历史回撤 """
+        if end_date is None:
+            price = self.get_gz()
+        else:
+            price = self.price_list.get(end_date, (0, 0))
+        if price[1] == 0:
+            return 0
+        p_list = []
+        for i in range(1, days):
+            d = end_date - datetime.timedelta(days=i)
+            p_list.append(self.price_list.get(d, (0, 0))[1])
+        if max(p_list) <= price[1]:
+            return 0
+        else:
+            print(d.strftime('%Y-%m-%d'), max(p_list), price[1])
+            return round((max(p_list) - price[1]) / max(p_list) * 100, 4)
+
     def save_fundprice(self, fprice):
         """ 保存基金的净值，可以获取当前净值和累计净值 """
         with open(self.record_path, 'w') as fw:
@@ -60,6 +80,18 @@ class EastFund():
                 result.append(d.strftime('%Y-%m-%d'))
                 result.append(str(fprice[d][0]))
                 result.append(str(fprice[d][1]))
+                line = ','.join(result)
+                fw.write(line)
+                fw.write('\n')
+
+    def save_revert(self, fprice):
+        """ 保存基金的回撤 """
+        with open(self.revert_path, 'w') as fw:
+            for d in sorted(fprice.keys()):
+                result = []
+                result.append(self.fid)
+                result.append(d.strftime('%Y-%m-%d'))
+                result.append(str(fprice[d]))
                 line = ','.join(result)
                 fw.write(line)
                 fw.write('\n')
@@ -99,6 +131,41 @@ class EastFund():
                 result[d] = (float(arr[2]), float(arr[3]))
             self.save_fundprice(result)
             self.price_list = result
+            return result
+
+    def load_revert(self, end_date=None, days=360):
+        result = {}
+        if end_date is None:
+            n = datetime.datetime.now() - datetime.timedelta(days=1)
+            end_date = datetime.datetime(n.year, n.month, n.day, 0, 0, 0)
+        max_dt = datetime.datetime(1970, 1, 1)
+        try:
+            fr = open(self.revert_path, 'r')
+            for line in fr.readlines():
+                arr = line.strip().split(',')
+                d = datetime.datetime.strptime(arr[1], '%Y-%m-%d')
+                max_dt = d if d > max_dt else max_dt
+                result[d] = float(arr[2])
+            fr.close()
+            if end_date <= max_dt:
+                print('No need fetch new record')
+                self.revert_list = result
+                return result
+            else:
+                print('Need fetch new record')
+                for i in range(0, (end_date - max_date).days):
+                    d = max_date + datetime.timedelta(days=i)
+                    result[d] = self.get_revert(d, days)
+                self.save_revert(result)
+                self.revert_list = result
+                return result
+        except Exception:
+            print('First fetch revert')
+            for i in range(0, 3600):
+                d = end_date - datetime.timedelta(days=i)
+                result[d] = self.get_revert(d, days)
+            self.save_revert(result)
+            self.revert_list = result
             return result
 
     def get_delta_price(self, end_date=None):
@@ -168,3 +235,4 @@ if __name__ == '__main__':
     # index_code = '519062'
     ef = EastFund(index_code)
     ef.load_fundprice()
+    ef.load_revert()
