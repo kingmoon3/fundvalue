@@ -68,13 +68,16 @@ def create_email(values):
         基金 {} 当前估值为：{}，{} <br />
         该基金的年度平均净值为：{}，{} <br />
         该基金六年购买水位线为：{}，{} 次<br />
+        该基金今日回撤为：{}%<br />
+        该基金六年回撤水位线为：{}，{} 次<br />
         <br />
         '''.format(
             res['name'], res['pe'],
             res['pe30'], res['pe50'], res['pe70'], res['pe90'],
             res['fid'], res['price'][0], res['price'][1],
             round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
-            res['buy_water'][0], res['buy_water'][1])
+            res['buy_water'][0], res['buy_water'][1],
+            res['revert'], res['revert_water'], res['revert_length'])
     return (subject, content)
 
 
@@ -90,12 +93,15 @@ def create_1fund_email(values):
         该基金的年度平均净值为：{}，{} <br />
         该基金净值排名水位线为：{}，{} 次 <br />
         该基金六年购买水位线为：{}，{} 次 <br />
+        该基金今日回撤为：{}%<br />
+        该基金六年回撤水位线为：{}，{} 次<br />
         <br />
         '''.format(
             res['fid'], round(res['price'][0], 4), round(res['price'][1], 4),
             round(res['avg_price'][0], 4), round(res['avg_price'][1], 4),
             res['rank'][0], res['rank'][1],
-            round(res['buy_water'][0], 4), res['buy_water'][1])
+            round(res['buy_water'][0], 4), res['buy_water'][1],
+            res['revert'], res['revert_water'], res['revert_length'])
     return (subject, content)
 
 
@@ -104,7 +110,19 @@ dt = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time
 
 subject1 = u'【基金申购】' + datetime.datetime.now().strftime('%Y%m%d') + ' - '
 subject = ''
-content = ''
+content = u'''
+为缓解定投钝化，base 策略应做如下调整：<br />
+投资总额 < 1w，base = 100 <br />
+1w < 投资总额 < 2w，base = 200 <br />
+2w < 投资总额 < 4w，base = 300 <br />
+4w < 投资总额 < 6w，base = 400 <br />
+6w < 投资总额 < 9w，base = 500 <br />
+9w < 投资总额 < 12w，base = 600 <br />
+12w < 投资总额 < 16w，base = 700 <br />
+16w < 投资总额 < 20w，base = 800 <br />
+
+<br />
+'''
 
 for index_code in (
         '100038', '001594', '001548', '530015', '003986', '000948',
@@ -112,6 +130,7 @@ for index_code in (
         '001550', '162412', '000215', 'njbqg', 'wwxf'):
     p = Policy(index_code)
     p.load_fundprice()
+    p.load_revert()
     p.init_index_pbe()
     params = p.index['params']
     today = getattr(p, params['buyfunc'])(None, params['avgdays'], params['n'], 100)
